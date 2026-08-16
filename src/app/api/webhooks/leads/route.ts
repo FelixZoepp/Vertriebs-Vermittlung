@@ -29,13 +29,96 @@ import { sendBewerberEingang } from "@/lib/integrations/resend";
  *
  * Returns: { success: true, candidate_id: number } or { error: string }
  */
+/**
+ * Normalize webhook payloads from various sources (Perspective, Typeform, custom).
+ * Flattens nested structures and maps common field name variations.
+ */
+function normalizeWebhookBody(raw: unknown): Record<string, unknown> {
+  // Already a flat object
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const obj = raw as Record<string, unknown>;
+
+    // Perspective format: may nest data under "data", "fields", "answers", "contact", or "lead"
+    const nested =
+      obj.data ?? obj.fields ?? obj.answers ?? obj.contact ?? obj.lead ?? obj;
+    const flat: Record<string, unknown> = {};
+
+    // Flatten: if nested is an object, spread it; also keep top-level keys
+    if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+      Object.assign(flat, nested as Record<string, unknown>);
+    }
+    // Overlay top-level keys (lower priority than nested)
+    for (const [k, v] of Object.entries(obj)) {
+      if (!["data", "fields", "answers", "contact", "lead"].includes(k)) {
+        if (!(k in flat)) flat[k] = v;
+      }
+    }
+
+    // Map common field name variations → our schema
+    const aliases: Record<string, string[]> = {
+      vorname: ["first_name", "firstName", "fname", "Vorname", "vorname", "name"],
+      nachname: ["last_name", "lastName", "lname", "Nachname", "nachname", "surname", "family_name"],
+      email: ["email", "Email", "e_mail", "E-Mail", "emailAddress", "email_address"],
+      telefon: ["phone", "telefon", "Telefon", "Phone", "phone_number", "phoneNumber", "tel", "mobile"],
+      plz: ["zip", "plz", "PLZ", "postal_code", "postalCode", "zipCode", "zip_code", "postleitzahl"],
+      ort: ["city", "ort", "Ort", "City", "stadt", "Stadt", "location"],
+      erfahrung_jahre: ["experience", "erfahrung", "erfahrung_jahre", "years_experience"],
+      branchenerfahrung: ["industry", "branche", "branchenerfahrung", "industries", "branch"],
+      fuehrerschein: ["drivers_license", "fuehrerschein", "führerschein", "license", "driving_license"],
+      verfuegbar_ab: ["available_from", "verfuegbar_ab", "verfügbar_ab", "start_date", "startDate"],
+      quelle: ["source", "quelle", "utm_source", "referrer"],
+      quelle_detail: ["source_detail", "quelle_detail", "utm_campaign", "campaign", "ref", "referral"],
+    };
+
+    const result: Record<string, unknown> = {};
+    for (const [target, sources] of Object.entries(aliases)) {
+      for (const src of sources) {
+        if (flat[src] !== undefined && flat[src] !== null && flat[src] !== "") {
+          result[target] = flat[src];
+          break;
+        }
+      }
+    }
+
+    // If we got "name" but no nachname, try to split it
+    if (result.vorname && !result.nachname && typeof result.vorname === "string") {
+      const parts = result.vorname.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        result.vorname = parts[0];
+        result.nachname = parts.slice(1).join(" ");
+      }
+    }
+
+    // Pass through any extra fields not in aliases
+    for (const [k, v] of Object.entries(flat)) {
+      if (!(k in result)) result[k] = v;
+    }
+
+    return result;
+  }
+
+  return {};
+}
+
 export async function POST(request: Request) {
-  let body: Record<string, unknown>;
+  let rawBody: unknown;
   try {
-    body = await request.json();
+    rawBody = await request.json();
   } catch {
     return NextResponse.json({ error: "Ungültiger JSON-Body" }, { status: 400 });
   }
+
+  // Normalize: Perspective sends nested or flat data — extract fields flexibly
+  const body = normalizeWebhookBody(rawBody);
+
+  // Log raw payload for debugging (stored in activity_log)
+  const supabase = await createServiceClient();
+  await supabase.from("activity_log").insert({
+    entity_typ: "webhook",
+    entity_id: 0,
+    aktion: "raw_payload",
+    payload: { raw: rawBody, normalized: body },
+  });
 
   // Optional webhook secret auth
   const webhookSecret = process.env.WEBHOOK_SECRET;
@@ -68,8 +151,6 @@ export async function POST(request: Request) {
   const quelle = ["reel", "organisch", "empfehlung", "anzeige"].includes(String(body.quelle))
     ? String(body.quelle)
     : body.quelle_detail ? "reel" : "organisch";
-
-  const supabase = await createServiceClient();
 
   const { data, error } = await supabase
     .from("candidates")
