@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getCoordinatesForPLZ } from "@/lib/plz-data";
 import { CandidateForm } from "./_components/candidate-form";
 
 async function createCandidate(formData: FormData) {
@@ -13,13 +14,18 @@ async function createCandidate(formData: FormData) {
     .map((s) => s.trim())
     .filter(Boolean);
 
+  const plz = (formData.get("plz") as string) || null;
+  const coords = plz ? getCoordinatesForPLZ(plz) : null;
+
   const { error } = await supabase.from("candidates").insert({
     vorname: formData.get("vorname") as string,
     nachname: formData.get("nachname") as string,
     email: formData.get("email") as string,
     telefon: (formData.get("telefon") as string) || null,
-    plz: (formData.get("plz") as string) || null,
+    plz,
     ort: (formData.get("ort") as string) || null,
+    lat: coords?.lat ?? null,
+    lng: coords?.lng ?? null,
     quelle: formData.get("quelle") as string,
     quelle_detail: (formData.get("quelle_detail") as string) || null,
     erfahrung_jahre: parseInt(formData.get("erfahrung_jahre") as string) || 0,

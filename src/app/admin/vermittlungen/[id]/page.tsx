@@ -2,9 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { formatCent } from "@/lib/rules/invoicing";
+import { formatCent, MEILENSTEIN_VERTRAEGE } from "@/lib/rules/invoicing";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CreateInvoiceButton, ConfirmReportButton } from "./_components";
 
 export default async function VermittlungDetail({
   params,
@@ -35,6 +36,13 @@ export default async function VermittlungDetail({
     .select("*")
     .eq("placement_id", id)
     .order("created_at", { ascending: false });
+
+  const hasEinstellungsInvoice = (invoices || []).some(
+    (inv: any) => inv.typ === "einstellung"
+  );
+  const hasMeilensteinInvoice = (invoices || []).some(
+    (inv: any) => inv.typ === "meilenstein_100"
+  );
 
   return (
     <div className="max-w-3xl">
@@ -79,7 +87,7 @@ export default async function VermittlungDetail({
           <div>
             <p className="text-sm text-muted-foreground">Match-Score</p>
             <p className="text-2xl font-bold">
-              {placement.match_score ?? "—"}
+              {placement.match_score ?? "---"}
             </p>
           </div>
           <div>
@@ -103,16 +111,39 @@ export default async function VermittlungDetail({
             <p className="text-lg font-medium">
               {placement.meilenstein_frist
                 ? new Date(placement.meilenstein_frist).toLocaleDateString("de-DE")
-                : "—"}
+                : "---"}
             </p>
           </div>
         </div>
       </div>
 
+      {/* Invoice generation buttons */}
+      {(placement.status === "eingestellt" && !hasEinstellungsInvoice) ||
+      (placement.vertraege_gesamt >= MEILENSTEIN_VERTRAEGE &&
+        !hasMeilensteinInvoice) ? (
+        <div className="mt-4 flex gap-3">
+          {placement.status === "eingestellt" && !hasEinstellungsInvoice && (
+            <CreateInvoiceButton
+              placementId={placement.id}
+              typ="einstellung"
+              label="Rechnung erstellen"
+            />
+          )}
+          {placement.vertraege_gesamt >= MEILENSTEIN_VERTRAEGE &&
+            !hasMeilensteinInvoice && (
+              <CreateInvoiceButton
+                placementId={placement.id}
+                typ="meilenstein_100"
+                label="Meilenstein-Rechnung erstellen"
+              />
+            )}
+        </div>
+      ) : null}
+
       {/* Contract Reports */}
       <Separator className="my-6" />
       <h2 className="text-lg font-semibold">Vertragsmeldungen</h2>
-      {(!reports || reports.length === 0) ? (
+      {!reports || reports.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">
           Noch keine Meldungen.
         </p>
@@ -136,7 +167,10 @@ export default async function VermittlungDetail({
                 {r.bestaetigt_von_admin ? (
                   <Badge className="bg-green-100 text-green-800">Bestätigt</Badge>
                 ) : (
-                  <Badge variant="outline">Offen</Badge>
+                  <>
+                    <Badge variant="outline">Offen</Badge>
+                    <ConfirmReportButton reportId={r.id} />
+                  </>
                 )}
               </div>
             </div>
@@ -147,7 +181,7 @@ export default async function VermittlungDetail({
       {/* Invoices */}
       <Separator className="my-6" />
       <h2 className="text-lg font-semibold">Rechnungen</h2>
-      {(!invoices || invoices.length === 0) ? (
+      {!invoices || invoices.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">
           Noch keine Rechnungen.
         </p>

@@ -1,6 +1,8 @@
 "use server";
 
 import { createServiceClient } from "@/lib/supabase/server";
+import { sendBewerberEingang } from "@/lib/integrations/resend";
+import { getCoordinatesForPLZ } from "@/lib/plz-data";
 
 export interface BewerbenResult {
   success: boolean;
@@ -42,6 +44,9 @@ export async function submitBewerbung(
 
   const quelle = quelle_detail ? "reel" : "organisch";
 
+  // Auto-resolve coordinates from PLZ
+  const coords = plz ? getCoordinatesForPLZ(plz) : null;
+
   const supabase = await createServiceClient();
 
   const { error } = await supabase.from("candidates").insert({
@@ -51,6 +56,8 @@ export async function submitBewerbung(
     telefon,
     plz,
     ort,
+    lat: coords?.lat ?? null,
+    lng: coords?.lng ?? null,
     erfahrung_jahre,
     branchenerfahrung,
     fuehrerschein,
@@ -73,6 +80,9 @@ export async function submitBewerbung(
       error: "Es ist ein Fehler aufgetreten. Bitte versuche es erneut.",
     };
   }
+
+  // Send confirmation email (fire and forget)
+  sendBewerberEingang(email, vorname).catch(() => {});
 
   return { success: true };
 }

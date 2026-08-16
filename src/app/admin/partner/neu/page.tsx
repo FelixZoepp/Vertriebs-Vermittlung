@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getCoordinatesForPLZ } from "@/lib/plz-data";
 import { PartnerForm } from "./_components/partner-form";
 
 async function createPartner(formData: FormData) {
@@ -13,14 +14,19 @@ async function createPartner(formData: FormData) {
     .map((s) => s.trim())
     .filter(Boolean);
 
+  const plz = (formData.get("plz") as string) || null;
+  const coords = plz ? getCoordinatesForPLZ(plz) : null;
+
   const { error } = await supabase.from("partners").insert({
     firmenname: formData.get("firmenname") as string,
     ansprechpartner: formData.get("ansprechpartner") as string,
     email: formData.get("email") as string,
     telefon: (formData.get("telefon") as string) || null,
     strasse: (formData.get("strasse") as string) || null,
-    plz: (formData.get("plz") as string) || null,
+    plz,
     ort: (formData.get("ort") as string) || null,
+    lat: coords?.lat ?? null,
+    lng: coords?.lng ?? null,
     branche: (formData.get("branche") as string) || null,
     gesuchte_profile: gesuchteProfile,
     offene_stellen: parseInt(formData.get("offene_stellen") as string) || 0,

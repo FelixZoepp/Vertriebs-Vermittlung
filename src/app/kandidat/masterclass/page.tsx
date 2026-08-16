@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/auth";
 import { Badge } from "@/components/ui/badge";
+import { VideoPlayer } from "@/components/masterclass/video-player";
+import type { MasterclassModule, MasterclassProgress } from "@/lib/types";
 
 export default async function MasterclassPage() {
   const user = await getAuthUser();
@@ -40,13 +42,15 @@ export default async function MasterclassPage() {
     .eq("candidate_id", candidate.id);
 
   const progressMap = new Map(
-    (progress || []).map((p: any) => [p.module_id, p])
+    (progress || []).map((p: MasterclassProgress) => [p.module_id, p])
   );
 
-  const pflichtModule = (modules || []).filter((m: any) => m.pflicht);
-  const abgeschlossene = pflichtModule.filter((m: any) => {
+  const pflichtModule = (modules || []).filter(
+    (m: MasterclassModule) => m.pflicht
+  );
+  const abgeschlossene = pflichtModule.filter((m: MasterclassModule) => {
     const p = progressMap.get(m.id);
-    return p && p.sekunden_gesehen >= m.dauer_sek * 0.95;
+    return p && p.abgeschlossen;
   });
 
   const gesamtFortschritt =
@@ -80,12 +84,15 @@ export default async function MasterclassPage() {
             Noch keine Module vorhanden. Bitte warte auf die Freischaltung.
           </p>
         )}
-        {(modules || []).map((mod: any, idx: number) => {
+        {(modules || []).map((mod: MasterclassModule, idx: number) => {
           const prog = progressMap.get(mod.id);
+          const done = prog?.abgeschlossen ?? false;
           const percent = prog
-            ? Math.min(100, Math.round((prog.sekunden_gesehen / mod.dauer_sek) * 100))
+            ? Math.min(
+                100,
+                Math.round((prog.sekunden_gesehen / mod.dauer_sek) * 100)
+              )
             : 0;
-          const done = percent >= 95;
 
           return (
             <div
@@ -96,20 +103,44 @@ export default async function MasterclassPage() {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-sm font-medium">
-                    {idx + 1}
+                  <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
+                      done
+                        ? "bg-green-100 text-green-700"
+                        : "bg-muted"
+                    }`}
+                  >
+                    {done ? (
+                      <svg
+                        className="size-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    ) : (
+                      idx + 1
+                    )}
                   </span>
                   <div>
                     <p className="font-medium">{mod.titel}</p>
                     <p className="text-xs text-muted-foreground">
                       {Math.round(mod.dauer_sek / 60)} Min.
-                      {mod.pflicht && " · Pflicht"}
+                      {mod.pflicht && " \u00b7 Pflicht"}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {done ? (
-                    <span className="text-sm text-green-600">Fertig</span>
+                    <span className="text-sm font-medium text-green-600">
+                      Fertig
+                    </span>
                   ) : (
                     <span className="text-sm text-muted-foreground">
                       {percent}%
@@ -117,15 +148,15 @@ export default async function MasterclassPage() {
                   )}
                 </div>
               </div>
+
+              {/* Show VideoPlayer for incomplete modules, green checkmark for done */}
               {mod.video_url && !done && (
-                <a
-                  href={mod.video_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 inline-block text-sm font-medium text-primary hover:underline"
-                >
-                  Video ansehen &rarr;
-                </a>
+                <VideoPlayer
+                  moduleId={mod.id}
+                  videoUrl={mod.video_url}
+                  durationSek={mod.dauer_sek}
+                  initialProgress={prog?.sekunden_gesehen ?? 0}
+                />
               )}
             </div>
           );

@@ -24,6 +24,7 @@ const navItems: Record<UserRole, NavItem[]> = {
     { label: "Kandidaten", href: "/admin/kandidaten" },
     { label: "Partner", href: "/admin/partner" },
     { label: "Vermittlungen", href: "/admin/vermittlungen" },
+    { label: "Matching", href: "/admin/vermittlungen/matching" },
     { label: "Rechnungen", href: "/admin/rechnungen" },
     { label: "Content", href: "/admin/content" },
   ],

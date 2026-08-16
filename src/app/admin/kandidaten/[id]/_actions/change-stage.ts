@@ -8,6 +8,7 @@ import {
   isValidTransition,
   shouldUnlockMasterclass,
 } from "@/lib/rules/stage-transition";
+import { sendMasterclassFreischaltung } from "@/lib/integrations/resend";
 
 export async function changeStageAction(
   candidateId: number,
@@ -42,6 +43,19 @@ export async function changeStageAction(
 
   if (updateError) {
     return { error: `Fehler beim Aktualisieren: ${updateError.message}` };
+  }
+
+  // R1: Send masterclass email when unlocking
+  if (shouldUnlockMasterclass(toStage)) {
+    const { data: candidate } = await supabase
+      .from("candidates")
+      .select("email, vorname")
+      .eq("id", candidateId)
+      .single();
+    if (candidate) {
+      const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://vertriebs-vermittlung.vercel.app"}/login`;
+      sendMasterclassFreischaltung(candidate.email, candidate.vorname, loginUrl).catch(() => {});
+    }
   }
 
   // Log to activity_log
