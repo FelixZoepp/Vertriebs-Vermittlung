@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import type { Placement } from "@/lib/types";
 import { expressInterest, updatePlacementStatus } from "../_actions";
+import { UserCircle, Eye, EyeOff } from "lucide-react";
 
 const STATUS_LABELS: Record<string, string> = {
   vorgeschlagen: "Vorgeschlagen",
@@ -21,15 +22,34 @@ const STATUS_LABELS: Record<string, string> = {
   abgebrochen: "Abgebrochen",
 };
 
-function StatusBadge({ status }: { status: string }) {
-  const variant =
-    status === "eingestellt"
-      ? "default"
-      : status === "abgelehnt" || status === "abgebrochen"
-        ? "destructive"
-        : "secondary";
+function getStatusBadgeVariant(
+  status: string
+): "default" | "secondary" | "destructive" | "outline" {
+  switch (status) {
+    case "eingestellt":
+      return "default";
+    case "abgelehnt":
+    case "abgebrochen":
+      return "destructive";
+    case "interview":
+      return "secondary";
+    default:
+      return "outline";
+  }
+}
 
-  return <Badge variant={variant}>{STATUS_LABELS[status] ?? status}</Badge>;
+function getStatusDotColor(status: string): string {
+  switch (status) {
+    case "eingestellt":
+      return "bg-green-500";
+    case "interview":
+      return "bg-amber-500";
+    case "abgelehnt":
+    case "abgebrochen":
+      return "bg-red-500";
+    default:
+      return "bg-gray-400";
+  }
 }
 
 export function PlacementCard({ placement }: { placement: Placement }) {
@@ -59,26 +79,68 @@ export function PlacementCard({ placement }: { placement: Placement }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>
-            {isAnonymized
-              ? `Kandidat #${placement.candidate_id}`
-              : candidate
-                ? `${candidate.vorname} ${candidate.nachname}`
-                : `Kandidat #${placement.candidate_id}`}
-          </CardTitle>
-          <StatusBadge status={placement.status} />
+    <Card
+      className={`relative overflow-hidden shadow-sm transition-shadow hover:shadow-md ${
+        isAnonymized ? "border-dashed" : ""
+      }`}
+    >
+      {/* Anonymized overlay indicator */}
+      {isAnonymized && (
+        <div className="absolute right-3 top-3">
+          <EyeOff className="h-4 w-4 text-muted-foreground/40" />
+        </div>
+      )}
+
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-3">
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+              isAnonymized
+                ? "bg-muted"
+                : "bg-red-100 dark:bg-red-900/20"
+            }`}
+          >
+            <UserCircle
+              className={`h-5 w-5 ${
+                isAnonymized
+                  ? "text-muted-foreground/50"
+                  : "text-red-600 dark:text-red-400"
+              }`}
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <CardTitle className="text-base">
+              {isAnonymized
+                ? `Kandidat #${placement.candidate_id}`
+                : candidate
+                  ? `${candidate.vorname} ${candidate.nachname}`
+                  : `Kandidat #${placement.candidate_id}`}
+            </CardTitle>
+            <Badge
+              variant={getStatusBadgeVariant(placement.status)}
+              className="mt-1 gap-1.5"
+            >
+              <span
+                className={`inline-block h-1.5 w-1.5 rounded-full ${getStatusDotColor(placement.status)}`}
+              />
+              {STATUS_LABELS[placement.status] ?? placement.status}
+            </Badge>
+          </div>
         </div>
       </CardHeader>
 
       <CardContent>
-        <dl className="grid gap-2 text-sm sm:grid-cols-2">
+        <dl
+          className={`grid gap-2 text-sm sm:grid-cols-2 ${
+            isAnonymized ? "select-none" : ""
+          }`}
+        >
           {candidate?.plz && (
             <div>
               <dt className="text-muted-foreground">PLZ</dt>
-              <dd className="font-medium">{candidate.plz}</dd>
+              <dd className={`font-medium ${isAnonymized ? "blur-sm" : ""}`}>
+                {candidate.plz}
+              </dd>
             </div>
           )}
           {candidate && (
@@ -92,7 +154,7 @@ export function PlacementCard({ placement }: { placement: Placement }) {
           )}
           {candidate?.branchenerfahrung &&
             candidate.branchenerfahrung.length > 0 && (
-              <div>
+              <div className="sm:col-span-2">
                 <dt className="text-muted-foreground">Branchenerfahrung</dt>
                 <dd className="font-medium">
                   {candidate.branchenerfahrung.join(", ")}
@@ -108,12 +170,12 @@ export function PlacementCard({ placement }: { placement: Placement }) {
             </div>
           )}
 
-          {/* Show contact info only when not anonymized */}
+          {/* Contact info only when not anonymized */}
           {!isAnonymized && candidate && (
             <>
               <div>
                 <dt className="text-muted-foreground">E-Mail</dt>
-                <dd className="font-medium">{candidate.email}</dd>
+                <dd className="font-medium truncate">{candidate.email}</dd>
               </div>
               {candidate.telefon && (
                 <div>
@@ -127,7 +189,11 @@ export function PlacementCard({ placement }: { placement: Placement }) {
           {placement.match_score !== null && (
             <div>
               <dt className="text-muted-foreground">Match-Score</dt>
-              <dd className="font-medium">{placement.match_score}%</dd>
+              <dd className="font-medium">
+                <span className="bg-gradient-to-r from-red-500 to-red-700 bg-clip-text text-transparent">
+                  {placement.match_score}%
+                </span>
+              </dd>
             </div>
           )}
         </dl>
@@ -137,26 +203,27 @@ export function PlacementCard({ placement }: { placement: Placement }) {
 
       {(placement.status === "vorgeschlagen" ||
         placement.status === "interview") && (
-        <CardFooter className="flex-wrap gap-2">
+        <CardFooter className="flex-wrap gap-2 border-t bg-muted/30 px-6 py-3">
           {placement.status === "vorgeschlagen" && (
             <Button
               size="sm"
+              className="bg-gradient-to-r from-red-600 to-red-700 text-white shadow-sm shadow-red-500/20 hover:from-red-700 hover:to-red-800"
               onClick={() => handleAction("interesse")}
               disabled={loading}
             >
+              <Eye className="mr-1.5 h-3.5 w-3.5" />
               Interesse
             </Button>
           )}
           {placement.status === "interview" && (
-            <>
-              <Button
-                size="sm"
-                onClick={() => handleAction("eingestellt")}
-                disabled={loading}
-              >
-                Eingestellt
-              </Button>
-            </>
+            <Button
+              size="sm"
+              className="bg-gradient-to-r from-red-600 to-red-700 text-white shadow-sm shadow-red-500/20 hover:from-red-700 hover:to-red-800"
+              onClick={() => handleAction("eingestellt")}
+              disabled={loading}
+            >
+              Eingestellt
+            </Button>
           )}
           <Button
             size="sm"
