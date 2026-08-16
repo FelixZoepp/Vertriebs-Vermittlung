@@ -126,7 +126,7 @@ export function PartnerPipelineBoard({ placements }: { placements: PlacementData
       <div className="flex gap-4 overflow-x-auto pb-4">
         {activeStages.map((stage) => {
           const stageItems = items.filter((p) => p.status === stage);
-          const isAnonymized = stage === "vorgeschlagen";
+          const isAnonymized = stage === "leadeingang";
           const nextStage = activeStages[activeStages.indexOf(stage) + 1] as PlacementStage | undefined;
 
           return (
@@ -207,7 +207,7 @@ export function PartnerPipelineBoard({ placements }: { placements: PlacementData
                           </div>
                         )}
 
-                        {/* Contact info (only visible after vorgeschlagen) */}
+                        {/* Contact info (only visible after leadeingang) */}
                         {!isAnonymized && (
                           <div className="mt-3 space-y-1 border-t pt-3">
                             <a href={`mailto:${c.email}`} className="flex items-center gap-1.5 text-xs text-primary hover:underline">

@@ -65,7 +65,7 @@ export async function PATCH(
     // Also update candidate stage
     await supabase
       .from("candidates")
-      .update({ stage: "eingestellt", stage_changed_at: now })
+      .update({ stage: "vermittelt", stage_changed_at: now })
       .eq("id", placement.candidate_id);
   }
 

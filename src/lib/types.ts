@@ -24,30 +24,22 @@ export interface Partner {
 
 export const STAGES = [
   "eingang",
-  "kontaktiert",
-  "erstgespraech",
   "qualifiziert",
   "masterclass_laeuft",
-  "masterclass_abgeschlossen",
-  "vorgestellt",
-  "interview",
-  "eingestellt",
+  "vermittelbar",
+  "vermittelt",
   "abgelehnt",
 ] as const;
 
 export type Stage = (typeof STAGES)[number];
 
 export const STAGE_LABELS: Record<Stage, string> = {
-  eingang: "Eingang",
-  kontaktiert: "Kontaktiert",
-  erstgespraech: "Erstgespräch",
+  eingang: "Leadeingang",
   qualifiziert: "Qualifiziert",
   masterclass_laeuft: "Masterclass läuft",
-  masterclass_abgeschlossen: "Masterclass abgeschlossen",
-  vorgestellt: "Vorgestellt",
-  interview: "Interview",
-  eingestellt: "Eingestellt",
-  abgelehnt: "Abgelehnt / Verloren",
+  vermittelbar: "Vermittelfähig",
+  vermittelt: "Vermittelt",
+  abgelehnt: "Abgelehnt",
 };
 
 export interface Candidate {
@@ -82,7 +74,7 @@ export interface Placement {
   candidate_id: number;
   partner_id: number;
   match_score: number | null;
-  status: "vorgeschlagen" | "erstgespraech" | "vorstellungsgespraech" | "probetag" | "eingestellt" | "abgelehnt" | "abgebrochen";
+  status: "leadeingang" | "vorstellungsgespraech" | "probetag" | "eingestellt" | "abgelehnt" | "abgebrochen";
   vorgeschlagen_am: string;
   eingestellt_am: string | null;
   abgelehnt_grund: string | null;

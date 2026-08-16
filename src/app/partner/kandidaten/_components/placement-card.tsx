@@ -15,8 +15,7 @@ import { expressInterest, updatePlacementStatus } from "../_actions";
 import { UserCircle, Eye, EyeOff } from "lucide-react";
 
 const STATUS_LABELS: Record<string, string> = {
-  vorgeschlagen: "Vorgeschlagen",
-  erstgespraech: "Erstgespräch",
+  leadeingang: "Leadeingang",
   vorstellungsgespraech: "Vorstellungsgespräch",
   probetag: "Probetag",
   eingestellt: "Eingestellt",
@@ -33,7 +32,7 @@ function getStatusBadgeVariant(
     case "abgelehnt":
     case "abgebrochen":
       return "destructive";
-    case "erstgespraech":
+    case "leadeingang":
     case "vorstellungsgespraech":
     case "probetag":
       return "secondary";
@@ -46,7 +45,7 @@ function getStatusDotColor(status: string): string {
   switch (status) {
     case "eingestellt":
       return "bg-green-500";
-    case "erstgespraech":
+    case "leadeingang":
     case "vorstellungsgespraech":
     case "probetag":
       return "bg-amber-500";
@@ -63,10 +62,10 @@ export function PlacementCard({ placement }: { placement: Placement }) {
   const [error, setError] = useState("");
 
   const candidate = placement.candidate;
-  const isAnonymized = placement.status === "vorgeschlagen";
+  const isAnonymized = placement.status === "leadeingang";
 
   async function handleAction(
-    action: "interesse" | "erstgespraech" | "vorstellungsgespraech" | "probetag" | "eingestellt" | "abgelehnt"
+    action: "interesse" | "vorstellungsgespraech" | "probetag" | "eingestellt" | "abgelehnt"
   ) {
     setLoading(true);
     setError("");
@@ -207,12 +206,11 @@ export function PlacementCard({ placement }: { placement: Placement }) {
         {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
       </CardContent>
 
-      {(placement.status === "vorgeschlagen" ||
-        placement.status === "erstgespraech" ||
+      {(placement.status === "leadeingang" ||
         placement.status === "vorstellungsgespraech" ||
         placement.status === "probetag") && (
         <CardFooter className="flex-wrap gap-2 border-t bg-muted/30 px-6 py-3">
-          {placement.status === "vorgeschlagen" && (
+          {placement.status === "leadeingang" && (
             <Button
               size="sm"
               className="bg-gradient-to-r from-red-600 to-red-700 text-white shadow-sm shadow-red-500/20 hover:from-red-700 hover:to-red-800"

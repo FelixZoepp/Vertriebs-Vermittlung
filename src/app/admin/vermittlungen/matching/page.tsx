@@ -9,22 +9,22 @@ import { STAGE_LABELS } from "@/lib/types";
 export default async function MatchingPage() {
   const supabase = await createClient();
 
-  // Candidates ready for matching: masterclass_abgeschlossen OR manually matchable stages
+  // Candidates ready for matching: vermittelbar
   const { data: readyCandidates } = await supabase
     .from("candidates")
     .select(
       "id, vorname, nachname, email, telefon, plz, ort, erfahrung_jahre, branchenerfahrung, fuehrerschein, verfuegbar_ab, umkreis_bereitschaft_km, lat, lng, stage, stage_changed_at, quelle"
     )
-    .in("stage", ["masterclass_abgeschlossen", "qualifiziert", "erstgespraech"])
+    .in("stage", ["vermittelbar"])
     .order("stage_changed_at", { ascending: true });
 
-  // Already matched candidates (vorgestellt, interview) for overview
+  // Already matched candidates (vermittelt) for overview
   const { data: matchedCandidates } = await supabase
     .from("candidates")
     .select(
       "id, vorname, nachname, plz, ort, stage"
     )
-    .in("stage", ["vorgestellt", "interview"])
+    .in("stage", ["vermittelt"])
     .order("stage_changed_at", { ascending: false })
     .limit(10);
 
@@ -37,8 +37,8 @@ export default async function MatchingPage() {
 
   const ready = readyCandidates || [];
   const matched = matchedCandidates || [];
-  const masterclassDone = ready.filter((c: any) => c.stage === "masterclass_abgeschlossen");
-  const otherStages = ready.filter((c: any) => c.stage !== "masterclass_abgeschlossen");
+  const masterclassDone = ready.filter((c: any) => c.stage === "vermittelbar");
+  const otherStages: typeof ready = [];
 
   return (
     <div>
@@ -68,7 +68,7 @@ export default async function MatchingPage() {
         <div className="rounded-lg border bg-card p-4">
           <p className="text-sm text-muted-foreground">Bereit für Matching</p>
           <p className="mt-1 text-2xl font-bold">{masterclassDone.length}</p>
-          <p className="text-xs text-muted-foreground">Masterclass abgeschlossen</p>
+          <p className="text-xs text-muted-foreground">Bereit fuer Vermittlung</p>
         </div>
         <div className="rounded-lg border bg-card p-4">
           <p className="text-sm text-muted-foreground">Aktive Partner</p>
@@ -78,7 +78,7 @@ export default async function MatchingPage() {
         <div className="rounded-lg border bg-card p-4">
           <p className="text-sm text-muted-foreground">Im Vermittlungsprozess</p>
           <p className="mt-1 text-2xl font-bold">{matched.length}</p>
-          <p className="text-xs text-muted-foreground">vorgestellt / interview</p>
+          <p className="text-xs text-muted-foreground">vermittelt</p>
         </div>
       </div>
 
@@ -98,10 +98,10 @@ export default async function MatchingPage() {
         </div>
       )}
 
-      {/* Priority: Masterclass abgeschlossen */}
+      {/* Priority: Vermittelbar */}
       <div className="mt-8">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold">Masterclass abgeschlossen</h2>
+          <h2 className="text-lg font-semibold">Vermittelbar</h2>
           <Badge className="bg-green-100 text-green-800">{masterclassDone.length}</Badge>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -113,7 +113,7 @@ export default async function MatchingPage() {
             <div className="rounded-lg border border-dashed p-8 text-center">
               <Users className="mx-auto h-8 w-8 text-muted-foreground/40" />
               <p className="mt-2 text-muted-foreground">
-                Keine Kandidaten mit abgeschlossener Masterclass.
+                Keine vermittelbaren Kandidaten vorhanden.
               </p>
             </div>
           )}
@@ -144,7 +144,7 @@ export default async function MatchingPage() {
       {/* Recently matched overview */}
       {matched.length > 0 && (
         <div className="mt-10">
-          <h2 className="text-lg font-semibold">Kürzlich vermittelt</h2>
+          <h2 className="text-lg font-semibold">Bereits vermittelt</h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {matched.map((c: any) => (
               <Link key={c.id} href={`/admin/kandidaten/${c.id}`}>

@@ -1,21 +1,18 @@
 import type { Stage } from "@/lib/types";
 
 /**
- * R1: When stage changes to 'qualifiziert', trigger masterclass unlock.
- * R2: Masterclass completion auto-transitions to 'masterclass_abgeschlossen'.
+ * R1: When stage changes to 'qualifiziert', trigger masterclass unlock + account creation.
+ * R2: Masterclass completion auto-transitions to 'vermittelbar'.
+ * R3: 'vermittelbar' triggers matching.
  * General: Track stage_changed_at on every transition.
  */
 
 const STAGE_ORDER: Stage[] = [
   "eingang",
-  "kontaktiert",
-  "erstgespraech",
   "qualifiziert",
   "masterclass_laeuft",
-  "masterclass_abgeschlossen",
-  "vorgestellt",
-  "interview",
-  "eingestellt",
+  "vermittelbar",
+  "vermittelt",
   "abgelehnt",
 ];
 
@@ -36,11 +33,11 @@ export function shouldUnlockMasterclass(newStage: Stage): boolean {
 }
 
 export function shouldTriggerMatching(newStage: Stage): boolean {
-  return newStage === "masterclass_abgeschlossen";
+  return newStage === "vermittelbar";
 }
 
 export function shouldCreateInvoice(newStage: Stage): boolean {
-  return newStage === "eingestellt";
+  return newStage === "vermittelt";
 }
 
 export function requiresRejectionReason(newStage: Stage): boolean {

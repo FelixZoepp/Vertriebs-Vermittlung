@@ -65,7 +65,7 @@ export async function GET(
   const { data: placementCounts } = await supabase
     .from("placements")
     .select("partner_id")
-    .in("status", ["vorgeschlagen", "erstgespraech", "vorstellungsgespraech", "probetag", "eingestellt"]);
+    .in("status", ["leadeingang", "vorstellungsgespraech", "probetag", "eingestellt"]);
 
   const countMap: Record<number, number> = {};
   if (placementCounts) {

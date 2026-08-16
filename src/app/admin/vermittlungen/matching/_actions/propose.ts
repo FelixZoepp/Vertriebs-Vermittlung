@@ -25,13 +25,13 @@ export async function proposeMatch(
     .select("id")
     .eq("candidate_id", candidateId)
     .eq("partner_id", partnerId)
-    .in("status", ["vorgeschlagen", "erstgespraech", "vorstellungsgespraech", "probetag", "eingestellt"])
+    .in("status", ["leadeingang", "vorstellungsgespraech", "probetag", "eingestellt"])
     .limit(1);
 
   if (existing && existing.length > 0) {
     return {
       success: false,
-      error: "Dieser Kandidat wurde diesem Partner bereits vorgeschlagen.",
+      error: "Dieser Kandidat wurde diesem Partner bereits zugeordnet.",
     };
   }
 
@@ -42,7 +42,7 @@ export async function proposeMatch(
       candidate_id: candidateId,
       partner_id: partnerId,
       match_score: matchScore,
-      status: "vorgeschlagen",
+      status: "leadeingang",
       vorgeschlagen_am: now,
       vertraege_gesamt: 0,
     })
@@ -56,11 +56,11 @@ export async function proposeMatch(
     };
   }
 
-  // Update candidate stage to 'vorgestellt'
+  // Update candidate stage to 'vermittelt'
   const { error: stageError } = await supabase
     .from("candidates")
     .update({
-      stage: "vorgestellt",
+      stage: "vermittelt",
       stage_changed_at: now,
     })
     .eq("id", candidateId);
@@ -73,7 +73,7 @@ export async function proposeMatch(
   const { error: logError } = await supabase.from("activity_log").insert({
     entity_typ: "placement",
     entity_id: placement.id,
-    aktion: "vorgeschlagen",
+    aktion: "vermittlung_erstellt",
     akteur_id: user.id,
     payload: {
       candidate_id: candidateId,

@@ -171,11 +171,11 @@ export async function POST(request: NextRequest) {
       if (allPflichtDone && candidate.stage === "masterclass_laeuft") {
         masterclassComplete = true;
 
-        // Update candidate stage to masterclass_abgeschlossen
+        // Update candidate stage to vermittelbar
         const { error: stageError } = await supabase
           .from("candidates")
           .update({
-            stage: "masterclass_abgeschlossen",
+            stage: "vermittelbar",
             stage_changed_at: now,
             masterclass_abgeschlossen_am: now,
           })
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
           .insert({
             entity_typ: "candidate",
             entity_id: candidate.id,
-            aktion: "masterclass_abgeschlossen",
+            aktion: "masterclass_abgeschlossen_vermittelbar",
             akteur_id: user.id,
             payload: {
               pflicht_module: pflichtModules.length,

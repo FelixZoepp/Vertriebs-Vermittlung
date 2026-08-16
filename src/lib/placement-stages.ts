@@ -1,6 +1,5 @@
 export const PLACEMENT_STAGES = [
-  "vorgeschlagen",
-  "erstgespraech",
+  "leadeingang",
   "vorstellungsgespraech",
   "probetag",
   "eingestellt",
@@ -10,8 +9,7 @@ export const PLACEMENT_STAGES = [
 export type PlacementStage = (typeof PLACEMENT_STAGES)[number];
 
 export const PLACEMENT_STAGE_LABELS: Record<PlacementStage, string> = {
-  vorgeschlagen: "Vorgeschlagen",
-  erstgespraech: "Erstgespräch",
+  leadeingang: "Leadeingang",
   vorstellungsgespraech: "Vorstellungsgespräch",
   probetag: "Probetag",
   eingestellt: "Eingestellt",
@@ -19,8 +17,7 @@ export const PLACEMENT_STAGE_LABELS: Record<PlacementStage, string> = {
 };
 
 export const PLACEMENT_STAGE_COLORS: Record<PlacementStage, string> = {
-  vorgeschlagen: "bg-blue-100 text-blue-800",
-  erstgespraech: "bg-amber-100 text-amber-800",
+  leadeingang: "bg-blue-100 text-blue-800",
   vorstellungsgespraech: "bg-purple-100 text-purple-800",
   probetag: "bg-cyan-100 text-cyan-800",
   eingestellt: "bg-green-100 text-green-800",
@@ -28,12 +25,19 @@ export const PLACEMENT_STAGE_COLORS: Record<PlacementStage, string> = {
 };
 
 export const PLACEMENT_PIPELINE_STAGES: PlacementStage[] = [
-  "vorgeschlagen",
-  "erstgespraech",
+  "leadeingang",
   "vorstellungsgespraech",
   "probetag",
   "eingestellt",
 ];
+
+export const TRACKING_INTERVALS = [
+  { key: "7_tage", label: "7 Tage", days: 7 },
+  { key: "14_tage", label: "14 Tage", days: 14 },
+  { key: "30_tage", label: "30 Tage", days: 30 },
+  { key: "60_tage", label: "60 Tage", days: 60 },
+  { key: "90_tage", label: "90 Tage", days: 90 },
+] as const;
 
 export function isValidPlacementTransition(
   from: PlacementStage,

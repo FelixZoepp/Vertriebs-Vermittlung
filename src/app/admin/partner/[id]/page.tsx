@@ -19,8 +19,7 @@ const STATUS_LABELS: Record<Partner["status"], string> = {
 };
 
 const PLACEMENT_STATUS_LABELS: Record<Placement["status"], string> = {
-  vorgeschlagen: "Vorgeschlagen",
-  erstgespraech: "Erstgespräch",
+  leadeingang: "Leadeingang",
   vorstellungsgespraech: "Vorstellungsgespräch",
   probetag: "Probetag",
   eingestellt: "Eingestellt",
@@ -66,7 +65,7 @@ function PlacementStatusBadge({ status }: { status: Placement["status"] }) {
           {PLACEMENT_STATUS_LABELS[status]}
         </Badge>
       );
-    case "erstgespraech":
+    case "leadeingang":
       return (
         <Badge
           variant="outline"

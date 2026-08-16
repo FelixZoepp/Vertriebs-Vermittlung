@@ -10,18 +10,14 @@ import type { Candidate, Stage } from "@/lib/types";
 function getStageBorderColor(stage: Stage): string {
   switch (stage) {
     case "eingang":
-    case "kontaktiert":
       return "border-l-gray-400";
-    case "erstgespraech":
     case "qualifiziert":
       return "border-l-blue-500";
     case "masterclass_laeuft":
-    case "masterclass_abgeschlossen":
       return "border-l-purple-500";
-    case "vorgestellt":
-    case "interview":
+    case "vermittelbar":
       return "border-l-amber-500";
-    case "eingestellt":
+    case "vermittelt":
       return "border-l-green-500";
     case "abgelehnt":
       return "border-l-red-500";

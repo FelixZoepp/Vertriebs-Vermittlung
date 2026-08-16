@@ -19,14 +19,10 @@ function getDaysInStage(stageChangedAt: string): number {
 const FILTER_STAGES: { value: Stage | "alle"; label: string }[] = [
   { value: "alle", label: "Alle" },
   { value: "eingang", label: "Eingang" },
-  { value: "kontaktiert", label: "Kontaktiert" },
-  { value: "erstgespraech", label: "Erstgespraech" },
   { value: "qualifiziert", label: "Qualifiziert" },
   { value: "masterclass_laeuft", label: "MC laeuft" },
-  { value: "masterclass_abgeschlossen", label: "MC fertig" },
-  { value: "vorgestellt", label: "Vorgestellt" },
-  { value: "interview", label: "Interview" },
-  { value: "eingestellt", label: "Eingestellt" },
+  { value: "vermittelbar", label: "Vermittelbar" },
+  { value: "vermittelt", label: "Vermittelt" },
   { value: "abgelehnt", label: "Abgelehnt" },
 ];
 

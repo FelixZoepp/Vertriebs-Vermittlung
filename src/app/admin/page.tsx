@@ -60,7 +60,7 @@ export default async function AdminDashboard() {
     supabase
       .from("placements")
       .select("*", { count: "exact", head: true })
-      .in("status", ["vorgeschlagen", "erstgespraech", "vorstellungsgespraech", "probetag"]),
+      .in("status", ["leadeingang", "vorstellungsgespraech", "probetag"]),
     supabase
       .from("placements")
       .select("*", { count: "exact", head: true })

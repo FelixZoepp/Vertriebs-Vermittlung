@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 
 export async function updatePlacementStatus(
   placementId: number,
-  newStatus: "erstgespraech" | "vorstellungsgespraech" | "probetag" | "eingestellt" | "abgelehnt"
+  newStatus: "vorstellungsgespraech" | "probetag" | "eingestellt" | "abgelehnt"
 ) {
   const user = await getAuthUser();
   const supabase = await createClient();
@@ -58,10 +58,10 @@ export async function expressInterest(placementId: number) {
 
   const { error } = await supabase
     .from("placements")
-    .update({ status: "erstgespraech" })
+    .update({ status: "vorstellungsgespraech" })
     .eq("id", placementId)
     .eq("partner_id", partner.id)
-    .eq("status", "vorgeschlagen");
+    .eq("status", "leadeingang");
 
   if (error) {
     return { error: "Interesse konnte nicht vermerkt werden." };
