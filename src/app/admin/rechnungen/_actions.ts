@@ -96,19 +96,18 @@ export async function confirmContractReport(reportId: number) {
       .eq("id", reportId);
 
     // Recalculate vertraege_gesamt from all confirmed reports
+    // The report we just confirmed is already included in this query
     const { data: confirmedReports } = await supabase
       .from("contract_reports")
       .select("anzahl_vertraege")
       .eq("placement_id", report.placement_id)
       .not("bestaetigt_von_admin", "is", null);
 
-    // Include the one we just confirmed
-    const totalConfirmed =
-      (confirmedReports || []).reduce(
-        (sum: number, r: { anzahl_vertraege: number }) =>
-          sum + r.anzahl_vertraege,
-        0
-      ) + report.anzahl_vertraege;
+    const totalConfirmed = (confirmedReports || []).reduce(
+      (sum: number, r: { anzahl_vertraege: number }) =>
+        sum + r.anzahl_vertraege,
+      0
+    );
 
     await supabase
       .from("placements")

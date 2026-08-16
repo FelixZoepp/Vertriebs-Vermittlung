@@ -34,6 +34,9 @@ export default async function VermittlungenPage() {
     <div>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Vermittlungen</h1>
+        <Link href="/admin/vermittlungen/matching">
+          <Button>Matching starten</Button>
+        </Link>
       </div>
 
       <div className="mt-6 overflow-x-auto">
