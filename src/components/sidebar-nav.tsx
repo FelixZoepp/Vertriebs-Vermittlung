@@ -42,7 +42,6 @@ const navItems: Record<UserRole, NavItem[]> = {
     { label: "Vermittlungen", href: "/admin/vermittlungen", icon: Handshake },
     { label: "Matching", href: "/admin/vermittlungen/matching", icon: Target },
     { label: "Rechnungen", href: "/admin/rechnungen", icon: Receipt },
-    { label: "Content", href: "/admin/content", icon: Film },
   ],
   partner: [
     { label: "Dashboard", href: "/partner", icon: LayoutDashboard },

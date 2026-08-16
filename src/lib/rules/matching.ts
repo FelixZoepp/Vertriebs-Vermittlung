@@ -83,6 +83,6 @@ export function calculateMatchScore(
   return { partner_id: partner.id, score, distanz_km: Math.round(distanz), gruende };
 }
 
-export function rankMatches(results: MatchResult[]): MatchResult[] {
-  return results.sort((a, b) => b.score - a.score).slice(0, 3);
+export function rankMatches(results: MatchResult[], limit = 5): MatchResult[] {
+  return results.sort((a, b) => b.score - a.score).slice(0, limit);
 }
