@@ -1,5 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
+import {
+  calculateMatchScore,
+  rankMatches,
+  type MatchResult,
+} from "@/lib/rules/matching";
+import {
+  sendVermittelbarBenachrichtigung,
+  sendAdminNeuerVermittelbarer,
+  sendPartnerNeuerKandidat,
+} from "@/lib/integrations/resend";
+import type { Candidate, Partner } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
   let body: { module_id: number; sekunden_gesehen: number };
@@ -202,6 +213,11 @@ export async function POST(request: NextRequest) {
         if (logError) {
           console.error("Activity-Log fehlgeschlagen:", logError.message);
         }
+
+        // Fire-and-forget: send emails + auto-matching
+        handleVermittelbarAutomation(candidate.id, user.id).catch((err) =>
+          console.error("Vermittelbar automation failed:", err)
+        );
       }
     }
   }
@@ -210,4 +226,198 @@ export async function POST(request: NextRequest) {
     progress,
     masterclass_complete: masterclassComplete,
   });
+}
+
+/**
+ * Fire-and-forget automation when a candidate becomes vermittelbar:
+ * 1. Send congratulations email to candidate
+ * 2. Run matching against all active partners
+ * 3. If best match >= 70: auto-create placement + notify partner
+ * 4. Always notify admin
+ */
+async function handleVermittelbarAutomation(
+  candidateId: number,
+  _userId: string
+): Promise<void> {
+  const supabase = await createServiceClient();
+
+  // Fetch candidate details
+  const { data: candidate, error: candidateError } = await supabase
+    .from("candidates")
+    .select("*")
+    .eq("id", candidateId)
+    .single();
+
+  if (candidateError || !candidate) {
+    console.error("Automation: Kandidat nicht gefunden:", candidateError?.message);
+    return;
+  }
+
+  const kandidatName = `${candidate.vorname} ${candidate.nachname}`;
+  const adminEmail = process.env.ADMIN_EMAIL || "felixbusinessmail@gmx.de";
+
+  // 1. Send congratulations email to candidate
+  sendVermittelbarBenachrichtigung(candidate.email, candidate.vorname).catch(
+    (err) => console.error("Vermittelbar email failed:", err)
+  );
+
+  // 2. Send admin notification
+  sendAdminNeuerVermittelbarer(adminEmail, kandidatName, candidate.id).catch(
+    (err) => console.error("Admin notification failed:", err)
+  );
+
+  // 3. Run matching against active partners
+  const { data: partners, error: partnersError } = await supabase
+    .from("partners")
+    .select("*")
+    .eq("status", "aktiv")
+    .gt("offene_stellen", 0);
+
+  if (partnersError || !partners || partners.length === 0) {
+    console.log("Automation: Keine aktiven Partner gefunden.");
+    return;
+  }
+
+  // Count current active placements per partner
+  const { data: placementCounts } = await supabase
+    .from("placements")
+    .select("partner_id")
+    .in("status", [
+      "leadeingang",
+      "vorstellungsgespraech",
+      "probetag",
+      "eingestellt",
+    ]);
+
+  const countMap: Record<number, number> = {};
+  if (placementCounts) {
+    for (const p of placementCounts) {
+      countMap[p.partner_id] = (countMap[p.partner_id] || 0) + 1;
+    }
+  }
+
+  // Calculate match scores
+  const results: MatchResult[] = [];
+  for (const partner of partners as Partner[]) {
+    const partnerWithCount = {
+      ...partner,
+      aktuelle_placements: countMap[partner.id] || 0,
+    };
+    const result = calculateMatchScore(
+      candidate as Candidate,
+      partnerWithCount
+    );
+    if (result) {
+      results.push(result);
+    }
+  }
+
+  if (results.length === 0) {
+    console.log(`Automation: Keine Matches fuer Kandidat ${candidateId}.`);
+    return;
+  }
+
+  const ranked = rankMatches(results);
+  const bestMatch = ranked[0];
+
+  // 4. If best match >= 70: auto-create placement and notify partner
+  if (bestMatch.score >= 70) {
+    const now = new Date().toISOString();
+
+    // Check for existing active placement
+    const { data: existing } = await supabase
+      .from("placements")
+      .select("id")
+      .eq("candidate_id", candidateId)
+      .eq("partner_id", bestMatch.partner_id)
+      .in("status", [
+        "leadeingang",
+        "vorstellungsgespraech",
+        "probetag",
+        "eingestellt",
+      ])
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      console.log(
+        `Automation: Placement bereits vorhanden fuer Kandidat ${candidateId} -> Partner ${bestMatch.partner_id}.`
+      );
+      return;
+    }
+
+    // Create placement
+    const { data: placement, error: placementError } = await supabase
+      .from("placements")
+      .insert({
+        candidate_id: candidateId,
+        partner_id: bestMatch.partner_id,
+        match_score: bestMatch.score,
+        status: "leadeingang",
+        vorgeschlagen_am: now,
+        vertraege_gesamt: 0,
+      })
+      .select("id")
+      .single();
+
+    if (placementError || !placement) {
+      console.error(
+        "Automation: Placement-Insert fehlgeschlagen:",
+        placementError?.message
+      );
+      return;
+    }
+
+    // Update candidate stage to vermittelt
+    const { error: stageError } = await supabase
+      .from("candidates")
+      .update({
+        stage: "vermittelt",
+        stage_changed_at: now,
+      })
+      .eq("id", candidateId);
+
+    if (stageError) {
+      console.error("Automation: Stage update error:", stageError.message);
+    }
+
+    // Log to activity_log
+    supabase
+      .from("activity_log")
+      .insert({
+        entity_typ: "placement",
+        entity_id: placement.id,
+        aktion: "auto_vermittlung_erstellt",
+        akteur_id: null,
+        payload: {
+          candidate_id: candidateId,
+          partner_id: bestMatch.partner_id,
+          match_score: bestMatch.score,
+          auto: true,
+        },
+      })
+      .then(({ error }) => {
+        if (error) console.error("Automation: Activity log error:", error.message);
+      });
+
+    // Notify partner
+    const partner = (partners as Partner[]).find(
+      (p) => p.id === bestMatch.partner_id
+    );
+    if (partner) {
+      sendPartnerNeuerKandidat(
+        partner.email,
+        partner.ansprechpartner,
+        kandidatName,
+        bestMatch.score
+      ).catch((err) => console.error("Partner notification failed:", err));
+    }
+
+    console.log(
+      `Automation: Auto-Placement ${placement.id} erstellt. Kandidat ${candidateId} -> Partner ${bestMatch.partner_id} (Score: ${bestMatch.score}).`
+    );
+  } else {
+    console.log(
+      `Automation: Bester Match fuer Kandidat ${candidateId} hat Score ${bestMatch.score} (< 70). Kein Auto-Placement.`
+    );
+  }
 }

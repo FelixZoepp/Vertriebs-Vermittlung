@@ -10,7 +10,11 @@ import {
   requiresRejectionReason,
 } from "@/lib/rules/stage-transition";
 import { createCandidateAccount } from "@/lib/rules/candidate-account";
-import { sendMasterclassFreischaltung } from "@/lib/integrations/resend";
+import {
+  sendMasterclassFreischaltung,
+  sendVermittelbarBenachrichtigung,
+  sendAdminNeuerVermittelbarer,
+} from "@/lib/integrations/resend";
 
 export async function changeStageAction(
   candidateId: number,
@@ -100,6 +104,34 @@ export async function changeStageAction(
         candidate.vorname,
         loginUrl,
         temporaryPassword
+      ).catch(() => {});
+    }
+  }
+
+  // Send notifications when transitioning to vermittelbar
+  if (toStage === "vermittelbar") {
+    const { data: candidateForEmail } = await supabase
+      .from("candidates")
+      .select("email, vorname, nachname")
+      .eq("id", candidateId)
+      .single();
+
+    if (candidateForEmail) {
+      const kandidatName = `${candidateForEmail.vorname} ${candidateForEmail.nachname}`;
+      const adminEmail =
+        process.env.ADMIN_EMAIL || "felixbusinessmail@gmx.de";
+
+      // Fire-and-forget: congratulations email to candidate
+      sendVermittelbarBenachrichtigung(
+        candidateForEmail.email,
+        candidateForEmail.vorname
+      ).catch(() => {});
+
+      // Fire-and-forget: admin notification
+      sendAdminNeuerVermittelbarer(
+        adminEmail,
+        kandidatName,
+        candidateId
       ).catch(() => {});
     }
   }

@@ -33,7 +33,7 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Public routes
-  const publicRoutes = ["/login", "/auth/callback", "/bewerben", "/api/"];
+  const publicRoutes = ["/login", "/auth/callback", "/bewerben", "/api/", "/tracking"];
   if (publicRoutes.some((route) => pathname.startsWith(route))) {
     return supabaseResponse;
   }

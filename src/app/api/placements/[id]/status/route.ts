@@ -8,6 +8,7 @@ import {
 import {
   berechneMeilensteinFrist,
 } from "@/lib/rules/invoicing";
+import { TRACKING_INTERVALS } from "@/lib/placement-stages";
 
 export async function PATCH(
   request: NextRequest,
@@ -62,11 +63,22 @@ export async function PATCH(
     updateData.eingestellt_am = now;
     updateData.meilenstein_frist = berechneMeilensteinFrist(new Date()).toISOString().split("T")[0];
 
-    // Also update candidate stage
+    // Update candidate stage
     await supabase
       .from("candidates")
       .update({ stage: "vermittelt", stage_changed_at: now })
       .eq("id", placement.candidate_id);
+
+    // Auto-create tracking intervals for contract reporting
+    const trackingRows = TRACKING_INTERVALS.map((interval) => ({
+      placement_id: placementId,
+      intervall: interval.key,
+      angefragt_am: now,
+    }));
+    await supabase.from("contract_tracking").upsert(trackingRows, {
+      onConflict: "placement_id,intervall",
+      ignoreDuplicates: true,
+    });
   }
 
   if (newStatus === "abgelehnt") {

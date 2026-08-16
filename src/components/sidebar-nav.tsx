@@ -47,7 +47,7 @@ const navItems: Record<UserRole, NavItem[]> = {
   partner: [
     { label: "Dashboard", href: "/partner", icon: LayoutDashboard },
     { label: "Kandidaten", href: "/partner/kandidaten", icon: Users },
-    { label: "Verträge", href: "/partner/vertraege", icon: FileText },
+    { label: "Vertrags-Tracking", href: "/partner/vertraege", icon: FileText },
     { label: "Rechnungen", href: "/partner/rechnungen", icon: Receipt },
     { label: "Einstellungen", href: "/partner/einstellungen", icon: Settings },
   ],
