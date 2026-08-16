@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 export type UserRole = "admin" | "partner" | "candidate";
@@ -18,7 +18,9 @@ export async function getAuthUser(): Promise<AuthUser> {
 
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
+  // Use service client to bypass RLS for role check
+  const serviceClient = await createServiceClient();
+  const { data: profile } = await serviceClient
     .from("profiles")
     .select("role, name")
     .eq("id", user.id)
