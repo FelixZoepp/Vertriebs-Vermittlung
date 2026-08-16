@@ -6,7 +6,9 @@ import type { Placement } from "@/lib/types";
 
 const STATUS_COLORS: Record<string, string> = {
   vorgeschlagen: "bg-blue-100 text-blue-800",
-  interview: "bg-amber-100 text-amber-800",
+  erstgespraech: "bg-amber-100 text-amber-800",
+  vorstellungsgespraech: "bg-purple-100 text-purple-800",
+  probetag: "bg-cyan-100 text-cyan-800",
   eingestellt: "bg-green-100 text-green-800",
   abgelehnt: "bg-red-100 text-red-800",
   abgebrochen: "bg-gray-100 text-gray-800",
@@ -14,7 +16,9 @@ const STATUS_COLORS: Record<string, string> = {
 
 const STATUS_LABELS: Record<string, string> = {
   vorgeschlagen: "Vorgeschlagen",
-  interview: "Interview",
+  erstgespraech: "Erstgespräch",
+  vorstellungsgespraech: "Vorstellungsgespräch",
+  probetag: "Probetag",
   eingestellt: "Eingestellt",
   abgelehnt: "Abgelehnt",
   abgebrochen: "Abgebrochen",

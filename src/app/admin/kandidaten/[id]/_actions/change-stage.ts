@@ -1,24 +1,31 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/auth";
 import type { Stage } from "@/lib/types";
 import {
   isValidTransition,
   shouldUnlockMasterclass,
+  requiresRejectionReason,
 } from "@/lib/rules/stage-transition";
+import { createCandidateAccount } from "@/lib/rules/candidate-account";
 import { sendMasterclassFreischaltung } from "@/lib/integrations/resend";
 
 export async function changeStageAction(
   candidateId: number,
   fromStage: Stage,
-  toStage: Stage
+  toStage: Stage,
+  rejectionReason?: string
 ): Promise<{ error?: string } | undefined> {
   if (!isValidTransition(fromStage, toStage)) {
     return {
       error: `Ungueltige Stage-Transition: ${fromStage} -> ${toStage}`,
     };
+  }
+
+  if (requiresRejectionReason(toStage) && !rejectionReason?.trim()) {
+    return { error: "Ablehnungsgrund ist erforderlich." };
   }
 
   const user = await getAuthUser();
@@ -30,6 +37,10 @@ export async function changeStageAction(
     stage: toStage,
     stage_changed_at: now,
   };
+
+  if (requiresRejectionReason(toStage) && rejectionReason?.trim()) {
+    updateData.ablehnungsgrund = rejectionReason.trim();
+  }
 
   // R1: Set masterclass_freigeschaltet_am when transitioning to 'qualifiziert'
   if (shouldUnlockMasterclass(toStage)) {
@@ -45,16 +56,51 @@ export async function changeStageAction(
     return { error: `Fehler beim Aktualisieren: ${updateError.message}` };
   }
 
-  // R1: Send masterclass email when unlocking
+  // R1: Create auth account & send masterclass email with magic link
   if (shouldUnlockMasterclass(toStage)) {
+    let temporaryPassword: string | undefined;
+
+    // Create candidate auth account (idempotent)
+    try {
+      const accountResult = await createCandidateAccount(candidateId);
+      if (accountResult) {
+        temporaryPassword = accountResult.temporaryPassword;
+      }
+    } catch (err) {
+      console.error("Candidate account creation failed:", err);
+    }
+
+    // Fetch candidate data & generate magic link
     const { data: candidate } = await supabase
       .from("candidates")
       .select("email, vorname")
       .eq("id", candidateId)
       .single();
+
     if (candidate) {
-      const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://vertriebs-vermittlung.vercel.app"}/login`;
-      sendMasterclassFreischaltung(candidate.email, candidate.vorname, loginUrl).catch(() => {});
+      let loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://vertriebs-vermittlung.vercel.app"}/login`;
+
+      // Generate magic link via admin API
+      try {
+        const serviceClient = await createServiceClient();
+        const { data: linkData } =
+          await serviceClient.auth.admin.generateLink({
+            type: "magiclink",
+            email: candidate.email,
+          });
+        if (linkData?.properties?.action_link) {
+          loginUrl = linkData.properties.action_link;
+        }
+      } catch (err) {
+        console.error("Magic link generation failed:", err);
+      }
+
+      sendMasterclassFreischaltung(
+        candidate.email,
+        candidate.vorname,
+        loginUrl,
+        temporaryPassword
+      ).catch(() => {});
     }
   }
 
@@ -64,7 +110,11 @@ export async function changeStageAction(
     entity_id: candidateId,
     aktion: "stage_change",
     akteur_id: user.id,
-    payload: { from: fromStage, to: toStage },
+    payload: {
+      from: fromStage,
+      to: toStage,
+      ...(rejectionReason?.trim() ? { ablehnungsgrund: rejectionReason.trim() } : {}),
+    },
   });
 
   if (logError) {

@@ -14,9 +14,20 @@ const FROM = "Zoepp Media <noreply@zoeppmedia.de>";
 export async function sendMasterclassFreischaltung(
   email: string,
   name: string,
-  loginUrl: string
+  loginUrl: string,
+  password?: string
 ) {
   const resend = getResend();
+
+  const passwordHint = password
+    ? `
+        <div style="margin: 16px 0; padding: 12px 16px; background: #f5f5f5; border-radius: 6px; border-left: 3px solid #111;">
+          <p style="margin: 0 0 4px; font-size: 13px; color: #666;">Dein temporäres Passwort:</p>
+          <p style="margin: 0; font-family: monospace; font-size: 15px; font-weight: 600;">${password}</p>
+          <p style="margin: 8px 0 0; font-size: 12px; color: #999;">Bitte ändere es nach dem ersten Login.</p>
+        </div>`
+    : "";
+
   return resend.emails.send({
     from: FROM,
     to: email,
@@ -29,6 +40,7 @@ export async function sendMasterclassFreischaltung(
         <a href="${loginUrl}" style="display: inline-block; padding: 12px 24px; background: #111; color: #fff; text-decoration: none; border-radius: 6px; margin-top: 16px;">
           Masterclass starten
         </a>
+        ${passwordHint}
         <p style="margin-top: 24px; color: #666; font-size: 14px;">
           Bei Fragen erreichst du uns jederzeit.<br>
           Dein Zoepp Media Team

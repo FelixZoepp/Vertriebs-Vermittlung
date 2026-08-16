@@ -25,7 +25,7 @@ export async function proposeMatch(
     .select("id")
     .eq("candidate_id", candidateId)
     .eq("partner_id", partnerId)
-    .in("status", ["vorgeschlagen", "interview", "eingestellt"])
+    .in("status", ["vorgeschlagen", "erstgespraech", "vorstellungsgespraech", "probetag", "eingestellt"])
     .limit(1);
 
   if (existing && existing.length > 0) {

@@ -5,6 +5,8 @@ import {
   requiresRejectionReason,
   shouldUnlockMasterclass,
 } from "@/lib/rules/stage-transition";
+import { createCandidateAccount } from "@/lib/rules/candidate-account";
+import { sendMasterclassFreischaltung } from "@/lib/integrations/resend";
 import { STAGES, type Stage } from "@/lib/types";
 
 export async function PATCH(
@@ -116,6 +118,48 @@ export async function PATCH(
       ...(ablehnungsgrund ? { ablehnungsgrund } : {}),
     },
   });
+
+  // R1: Create auth account & send masterclass email with magic link (fire and forget)
+  if (shouldUnlockMasterclass(newStage)) {
+    (async () => {
+      try {
+        let temporaryPassword: string | undefined;
+
+        // Create candidate auth account (idempotent)
+        const accountResult = await createCandidateAccount(candidateId);
+        if (accountResult) {
+          temporaryPassword = accountResult.temporaryPassword;
+        }
+
+        // Generate magic link
+        const email = updated.email as string;
+        const vorname = updated.vorname as string;
+        let loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://vertriebs-vermittlung.vercel.app"}/login`;
+
+        try {
+          const { data: linkData } =
+            await supabase.auth.admin.generateLink({
+              type: "magiclink",
+              email,
+            });
+          if (linkData?.properties?.action_link) {
+            loginUrl = linkData.properties.action_link;
+          }
+        } catch (err) {
+          console.error("Magic link generation failed:", err);
+        }
+
+        await sendMasterclassFreischaltung(
+          email,
+          vorname,
+          loginUrl,
+          temporaryPassword
+        );
+      } catch (err) {
+        console.error("Masterclass account/email failed:", err);
+      }
+    })();
+  }
 
   return NextResponse.json({ candidate: updated });
 }

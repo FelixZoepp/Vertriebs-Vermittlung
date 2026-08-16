@@ -1,72 +1,73 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/auth";
-import type { Placement } from "@/lib/types";
-import { PlacementCard } from "./_components/placement-card";
+import { Badge } from "@/components/ui/badge";
+import {
+  PLACEMENT_PIPELINE_STAGES,
+  PLACEMENT_STAGE_LABELS,
+  PLACEMENT_STAGE_COLORS,
+} from "@/lib/placement-stages";
+import { PartnerPipelineBoard } from "./_components/partner-pipeline";
 import { Users } from "lucide-react";
 
 export default async function PartnerKandidatenPage() {
   const user = await getAuthUser();
   const supabase = await createClient();
 
-  // Get the partner record for the current user
-  const { data: partner, error: partnerError } = await supabase
+  const { data: partner } = await supabase
     .from("partners")
     .select("id")
     .eq("user_id", user.id)
     .single();
 
-  if (partnerError || !partner) {
+  if (!partner) {
     return (
-      <p className="text-destructive">
-        Kein Partner-Konto mit diesem Benutzer verknüpft.
-      </p>
+      <div className="flex flex-col items-center justify-center py-20">
+        <Users className="h-12 w-12 text-muted-foreground/30" />
+        <p className="mt-4 text-muted-foreground">Kein Partner-Konto verknüpft.</p>
+      </div>
     );
   }
 
-  // Fetch placements with joined candidates
-  const { data: placements, error } = await supabase
+  const { data: placements } = await supabase
     .from("placements")
-    .select("*, candidate:candidates(*)")
+    .select("id, candidate_id, match_score, status, vorgeschlagen_am, eingestellt_am, abgelehnt_grund, vertraege_gesamt, candidates(id, vorname, nachname, plz, ort, erfahrung_jahre, branchenerfahrung, fuehrerschein, verfuegbar_ab, email, telefon)")
     .eq("partner_id", partner.id)
-    .order("created_at", { ascending: false });
+    .not("status", "eq", "abgebrochen")
+    .order("vorgeschlagen_am", { ascending: false });
 
-  if (error) {
-    return (
-      <p className="text-destructive">Fehler beim Laden: {error.message}</p>
-    );
+  const stageCounts: Record<string, number> = {};
+  for (const p of placements || []) {
+    stageCounts[p.status] = (stageCounts[p.status] || 0) + 1;
   }
-
-  const typedPlacements = (placements ?? []) as Placement[];
 
   return (
     <div>
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/20">
-          <Users className="h-5 w-5 text-red-600 dark:text-red-400" />
+      <div className="flex items-center gap-4">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-red-700 shadow-lg shadow-red-500/20">
+          <Users className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">Vorgeschlagene Kandidaten</h1>
+          <h1 className="text-2xl font-bold">Kandidaten-Pipeline</h1>
           <p className="text-sm text-muted-foreground">
-            {typedPlacements.length}{" "}
-            {typedPlacements.length === 1 ? "Kandidat" : "Kandidaten"} insgesamt
+            {(placements || []).length} Kandidaten insgesamt
           </p>
         </div>
       </div>
 
-      {typedPlacements.length === 0 ? (
-        <div className="mt-8 rounded-lg border border-dashed p-12 text-center">
-          <Users className="mx-auto h-10 w-10 text-muted-foreground/30" />
-          <p className="mt-3 text-muted-foreground">
-            Es wurden dir noch keine Kandidaten vorgeschlagen.
-          </p>
-        </div>
-      ) : (
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {typedPlacements.map((p) => (
-            <PlacementCard key={p.id} placement={p} />
-          ))}
-        </div>
-      )}
+      <div className="mt-4 flex flex-wrap gap-2">
+        {PLACEMENT_PIPELINE_STAGES.map((stage) => (
+          <Badge key={stage} className={PLACEMENT_STAGE_COLORS[stage]}>
+            {PLACEMENT_STAGE_LABELS[stage]}: {stageCounts[stage] || 0}
+          </Badge>
+        ))}
+      </div>
+
+      <div className="mt-6">
+        <PartnerPipelineBoard placements={(placements || []).map((p: any) => ({
+          ...p,
+          candidates: Array.isArray(p.candidates) ? p.candidates[0] : p.candidates,
+        }))} />
+      </div>
     </div>
   );
 }

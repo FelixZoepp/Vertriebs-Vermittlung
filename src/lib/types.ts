@@ -82,7 +82,7 @@ export interface Placement {
   candidate_id: number;
   partner_id: number;
   match_score: number | null;
-  status: "vorgeschlagen" | "interview" | "eingestellt" | "abgelehnt" | "abgebrochen";
+  status: "vorgeschlagen" | "erstgespraech" | "vorstellungsgespraech" | "probetag" | "eingestellt" | "abgelehnt" | "abgebrochen";
   vorgeschlagen_am: string;
   eingestellt_am: string | null;
   abgelehnt_grund: string | null;
@@ -167,4 +167,13 @@ export interface MasterclassProgress {
   sekunden_gesehen: number;
   abgeschlossen: boolean;
   zuletzt_am: string;
+}
+
+export interface Note {
+  id: number;
+  entity_typ: string;
+  entity_id: number;
+  inhalt: string;
+  autor_id: string | null;
+  created_at: string;
 }

@@ -20,7 +20,9 @@ const STATUS_LABELS: Record<Partner["status"], string> = {
 
 const PLACEMENT_STATUS_LABELS: Record<Placement["status"], string> = {
   vorgeschlagen: "Vorgeschlagen",
-  interview: "Interview",
+  erstgespraech: "Erstgespräch",
+  vorstellungsgespraech: "Vorstellungsgespräch",
+  probetag: "Probetag",
   eingestellt: "Eingestellt",
   abgelehnt: "Abgelehnt",
   abgebrochen: "Abgebrochen",
@@ -64,11 +66,29 @@ function PlacementStatusBadge({ status }: { status: Placement["status"] }) {
           {PLACEMENT_STATUS_LABELS[status]}
         </Badge>
       );
-    case "interview":
+    case "erstgespraech":
       return (
         <Badge
           variant="outline"
           className="border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300"
+        >
+          {PLACEMENT_STATUS_LABELS[status]}
+        </Badge>
+      );
+    case "vorstellungsgespraech":
+      return (
+        <Badge
+          variant="outline"
+          className="border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-300"
+        >
+          {PLACEMENT_STATUS_LABELS[status]}
+        </Badge>
+      );
+    case "probetag":
+      return (
+        <Badge
+          variant="outline"
+          className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
         >
           {PLACEMENT_STATUS_LABELS[status]}
         </Badge>

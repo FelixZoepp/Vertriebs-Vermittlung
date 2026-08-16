@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 
 export async function updatePlacementStatus(
   placementId: number,
-  newStatus: "interview" | "eingestellt" | "abgelehnt"
+  newStatus: "erstgespraech" | "vorstellungsgespraech" | "probetag" | "eingestellt" | "abgelehnt"
 ) {
   const user = await getAuthUser();
   const supabase = await createClient();
@@ -58,7 +58,7 @@ export async function expressInterest(placementId: number) {
 
   const { error } = await supabase
     .from("placements")
-    .update({ status: "interview" })
+    .update({ status: "erstgespraech" })
     .eq("id", placementId)
     .eq("partner_id", partner.id)
     .eq("status", "vorgeschlagen");
