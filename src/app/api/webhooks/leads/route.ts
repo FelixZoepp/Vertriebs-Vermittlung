@@ -38,20 +38,36 @@ function normalizeWebhookBody(raw: unknown): Record<string, unknown> {
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {
     const obj = raw as Record<string, unknown>;
 
-    // Perspective format: may nest data under "data", "fields", "answers", "contact", or "lead"
-    const nested =
-      obj.data ?? obj.fields ?? obj.answers ?? obj.contact ?? obj.lead ?? obj;
+    // Perspective format: data lives in "values", profile values in "profile.*.value"
+    // Also support: "data", "fields", "answers", "contact", "lead"
     const flat: Record<string, unknown> = {};
 
-    // Flatten: if nested is an object, spread it; also keep top-level keys
-    if (nested && typeof nested === "object" && !Array.isArray(nested)) {
-      Object.assign(flat, nested as Record<string, unknown>);
+    // Priority 1: Perspective "values" object (flat key-value pairs)
+    if (obj.values && typeof obj.values === "object") {
+      Object.assign(flat, obj.values as Record<string, unknown>);
     }
-    // Overlay top-level keys (lower priority than nested)
-    for (const [k, v] of Object.entries(obj)) {
-      if (!["data", "fields", "answers", "contact", "lead"].includes(k)) {
+
+    // Priority 2: Perspective "profile" object (key → {title, value})
+    if (obj.profile && typeof obj.profile === "object") {
+      for (const [k, v] of Object.entries(obj.profile as Record<string, unknown>)) {
+        if (v && typeof v === "object" && "value" in (v as Record<string, unknown>)) {
+          if (!(k in flat)) flat[k] = (v as Record<string, unknown>).value;
+        }
+      }
+    }
+
+    // Priority 3: Other nested containers
+    const nested = obj.data ?? obj.fields ?? obj.answers ?? obj.contact ?? obj.lead;
+    if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+      for (const [k, v] of Object.entries(nested as Record<string, unknown>)) {
         if (!(k in flat)) flat[k] = v;
       }
+    }
+
+    // Priority 4: Top-level keys
+    const skipKeys = new Set(["data", "fields", "answers", "contact", "lead", "values", "profile", "meta", "titles", "funnelId", "funnelName", "trackingVersion"]);
+    for (const [k, v] of Object.entries(obj)) {
+      if (!skipKeys.has(k) && !(k in flat)) flat[k] = v;
     }
 
     // Map common field name variations → our schema
@@ -60,7 +76,7 @@ function normalizeWebhookBody(raw: unknown): Record<string, unknown> {
       nachname: ["last_name", "lastName", "lname", "Nachname", "nachname", "surname", "family_name"],
       email: ["email", "Email", "e_mail", "E-Mail", "emailAddress", "email_address"],
       telefon: ["phone", "telefon", "Telefon", "Phone", "phone_number", "phoneNumber", "tel", "mobile"],
-      plz: ["zip", "plz", "PLZ", "postal_code", "postalCode", "zipCode", "zip_code", "postleitzahl"],
+      plz: ["zip", "plz", "PLZ", "postal_code", "postalCode", "zipCode", "zip_code", "postleitzahl", "address#postalCode"],
       ort: ["city", "ort", "Ort", "City", "stadt", "Stadt", "location"],
       erfahrung_jahre: ["experience", "erfahrung", "erfahrung_jahre", "years_experience"],
       branchenerfahrung: ["industry", "branche", "branchenerfahrung", "industries", "branch"],
@@ -86,6 +102,29 @@ function normalizeWebhookBody(raw: unknown): Record<string, unknown> {
       if (parts.length >= 2) {
         result.vorname = parts[0];
         result.nachname = parts.slice(1).join(" ");
+      }
+    }
+
+    // Perspective question fields: detect Führerschein, Erfahrung, Branche from answers
+    for (const [k, v] of Object.entries(flat)) {
+      if (typeof v !== "string") continue;
+      const val = v.toLowerCase();
+
+      // Führerschein detection
+      if (!result.fuehrerschein && (k.includes("führerschein") || k.includes("fuehrerschein") || val.includes("führerschein"))) {
+        result.fuehrerschein = val.includes("vorhanden") || val.includes("ja") || val === "true";
+      }
+
+      // Erfahrung detection
+      if (!result.erfahrung_jahre && (k.includes("erfahrung") || val.includes("erfahrung"))) {
+        if (val.includes("ja") || val.includes("bereits")) {
+          result.erfahrung_jahre = 1; // at least some
+        }
+      }
+
+      // Branchenerfahrung from answers
+      if (!result.branchenerfahrung && (k.includes("vertrieb") || k.includes("gemacht"))) {
+        result.branchenerfahrung = v; // will be parsed as comma-separated later
       }
     }
 
