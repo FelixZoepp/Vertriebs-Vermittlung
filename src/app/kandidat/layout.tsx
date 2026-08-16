@@ -9,9 +9,11 @@ export default async function KandidatLayout({
   const user = await getAuthUser();
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-background">
       <SidebarNav role={user.role} userName={user.name} email={user.email} />
-      <main className="flex-1 overflow-y-auto p-6">{children}</main>
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">{children}</div>
+      </main>
     </div>
   );
 }
