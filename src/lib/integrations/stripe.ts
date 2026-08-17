@@ -72,3 +72,47 @@ export async function getInvoiceStatus(
   const invoice = await stripe.invoices.retrieve(invoiceId);
   return invoice.status;
 }
+
+export async function createSubscriptionCheckout(
+  customerId: string,
+  successUrl: string,
+  cancelUrl: string
+): Promise<Stripe.Checkout.Session> {
+  const stripe = getStripeClient();
+
+  const priceId = process.env.STRIPE_PARTNER_PRICE_ID;
+  if (!priceId) {
+    throw new Error("STRIPE_PARTNER_PRICE_ID is not set");
+  }
+
+  return stripe.checkout.sessions.create({
+    customer: customerId,
+    mode: "subscription",
+    line_items: [{ price: priceId, quantity: 1 }],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    payment_method_types: ["card", "sepa_debit"],
+    metadata: { source: "partner-registrierung" },
+  });
+}
+
+export async function getSubscriptionStatus(
+  customerId: string
+): Promise<{
+  status: Stripe.Subscription.Status | null;
+  subscriptionId: string | null;
+}> {
+  const stripe = getStripeClient();
+  const subscriptions = await stripe.subscriptions.list({
+    customer: customerId,
+    limit: 1,
+    status: "all",
+  });
+
+  const sub = subscriptions.data[0];
+  if (!sub) {
+    return { status: null, subscriptionId: null };
+  }
+
+  return { status: sub.status, subscriptionId: sub.id };
+}

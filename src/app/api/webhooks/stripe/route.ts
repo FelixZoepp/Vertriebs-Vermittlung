@@ -71,6 +71,84 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.mode === "subscription" && session.customer) {
+          const customerId =
+            typeof session.customer === "string"
+              ? session.customer
+              : session.customer.id;
+          const subscriptionId =
+            typeof session.subscription === "string"
+              ? session.subscription
+              : session.subscription?.id ?? null;
+
+          await supabase
+            .from("partners")
+            .update({
+              status: "aktiv",
+              abo_status: "aktiv",
+              stripe_subscription_id: subscriptionId,
+            })
+            .eq("stripe_customer_id", customerId);
+        }
+        break;
+      }
+
+      case "customer.subscription.updated": {
+        const subscription = event.data.object as Stripe.Subscription;
+        const customerId =
+          typeof subscription.customer === "string"
+            ? subscription.customer
+            : subscription.customer.id;
+
+        let aboStatus: string;
+        switch (subscription.status) {
+          case "active":
+            aboStatus = "aktiv";
+            break;
+          case "past_due":
+            aboStatus = "ueberfaellig";
+            break;
+          case "canceled":
+          case "unpaid":
+            aboStatus = "gekuendigt";
+            break;
+          default:
+            aboStatus = "aktiv";
+        }
+
+        const partnerStatus =
+          subscription.status === "active" ? "aktiv" : "pausiert";
+
+        await supabase
+          .from("partners")
+          .update({
+            status: partnerStatus,
+            abo_status: aboStatus,
+            stripe_subscription_id: subscription.id,
+          })
+          .eq("stripe_customer_id", customerId);
+        break;
+      }
+
+      case "customer.subscription.deleted": {
+        const subscription = event.data.object as Stripe.Subscription;
+        const customerId =
+          typeof subscription.customer === "string"
+            ? subscription.customer
+            : subscription.customer.id;
+
+        await supabase
+          .from("partners")
+          .update({
+            status: "pausiert",
+            abo_status: "gekuendigt",
+          })
+          .eq("stripe_customer_id", customerId);
+        break;
+      }
+
       default:
         // Unhandled event type — ignore
         break;

@@ -31,7 +31,25 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/");
+    // Determine dashboard by role
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (authUser) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", authUser.id)
+        .single();
+      const role = profile?.role || "candidate";
+      const dashboardPath =
+        role === "admin"
+          ? "/admin"
+          : role === "partner"
+            ? "/partner"
+            : "/kandidat";
+      router.push(dashboardPath);
+    } else {
+      router.push("/admin");
+    }
     router.refresh();
   }
 

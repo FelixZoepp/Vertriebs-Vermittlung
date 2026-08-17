@@ -19,6 +19,8 @@ export interface Partner {
   sepa_mandat_ref: string | null;
   sepa_mandat_datum: string | null;
   vertrag_unterschrieben_am: string | null;
+  stripe_subscription_id: string | null;
+  abo_status: "keins" | "aktiv" | "gekuendigt" | "ueberfaellig";
   created_at: string;
 }
 

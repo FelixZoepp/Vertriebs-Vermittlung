@@ -33,8 +33,22 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Public routes
-  const publicRoutes = ["/login", "/auth/callback", "/bewerben", "/api/", "/tracking"];
-  if (publicRoutes.some((route) => pathname.startsWith(route))) {
+  const publicRoutes = [
+    "/login",
+    "/auth/callback",
+    "/bewerben",
+    "/partner-werden",
+    "/api/",
+    "/tracking",
+    "/vertriebsjobs",
+    "/empfehlen",
+    "/impressum",
+    "/datenschutz",
+  ];
+  if (
+    pathname === "/" ||
+    publicRoutes.some((route) => pathname.startsWith(route))
+  ) {
     return supabaseResponse;
   }
 
@@ -76,14 +90,6 @@ export async function updateSession(request: NextRequest) {
   if (pathname.startsWith("/kandidat") && role !== "candidate") {
     const url = request.nextUrl.clone();
     url.pathname = role === "admin" ? "/admin" : "/partner";
-    return NextResponse.redirect(url);
-  }
-
-  // Root redirect based on role
-  if (pathname === "/") {
-    const url = request.nextUrl.clone();
-    url.pathname =
-      role === "admin" ? "/admin" : role === "partner" ? "/partner" : "/kandidat";
     return NextResponse.redirect(url);
   }
 

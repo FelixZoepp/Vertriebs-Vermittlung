@@ -42,31 +42,66 @@ export async function submitBewerbung(
     return { success: false, error: "Bitte fülle alle Pflichtfelder aus." };
   }
 
-  const quelle = quelle_detail ? "reel" : "organisch";
+  // Determine quelle based on ref parameter
+  // ref_<id> = referral from candidate, seo_<city> = SEO page, else reel/organisch
+  let quelle = "organisch";
+  let referredBy: number | null = null;
+
+  if (quelle_detail) {
+    if (quelle_detail.startsWith("ref_")) {
+      const refId = parseInt(quelle_detail.slice(4), 10);
+      if (!isNaN(refId)) {
+        referredBy = refId;
+        quelle = "empfehlung";
+      }
+    } else if (quelle_detail.startsWith("seo_")) {
+      quelle = "seo";
+    } else {
+      quelle = "reel";
+    }
+  }
 
   // Auto-resolve coordinates from PLZ
   const coords = plz ? getCoordinatesForPLZ(plz) : null;
 
   const supabase = await createServiceClient();
 
-  const { error } = await supabase.from("candidates").insert({
-    vorname,
-    nachname,
-    email,
-    telefon,
-    plz,
-    ort,
-    lat: coords?.lat ?? null,
-    lng: coords?.lng ?? null,
-    erfahrung_jahre,
-    branchenerfahrung,
-    fuehrerschein,
-    verfuegbar_ab,
-    umkreis_bereitschaft_km,
-    quelle,
-    quelle_detail,
-    stage: "eingang",
-  });
+  // Validate referrer exists if referral
+  if (referredBy) {
+    const { data: referrer } = await supabase
+      .from("candidates")
+      .select("id")
+      .eq("id", referredBy)
+      .single();
+    if (!referrer) {
+      referredBy = null;
+      quelle = "organisch";
+    }
+  }
+
+  const { data: newCandidate, error } = await supabase
+    .from("candidates")
+    .insert({
+      vorname,
+      nachname,
+      email,
+      telefon,
+      plz,
+      ort,
+      lat: coords?.lat ?? null,
+      lng: coords?.lng ?? null,
+      erfahrung_jahre,
+      branchenerfahrung,
+      fuehrerschein,
+      verfuegbar_ab,
+      umkreis_bereitschaft_km,
+      quelle,
+      quelle_detail,
+      referred_by: referredBy,
+      stage: "eingang",
+    })
+    .select("id")
+    .single();
 
   if (error) {
     if (error.code === "23505") {
@@ -79,6 +114,17 @@ export async function submitBewerbung(
       success: false,
       error: "Es ist ein Fehler aufgetreten. Bitte versuche es erneut.",
     };
+  }
+
+  // Create referral reward if this was a referral
+  if (referredBy && newCandidate?.id) {
+    await supabase
+      .from("referral_rewards")
+      .insert({
+        referrer_id: referredBy,
+        referred_id: newCandidate.id,
+        status: "ausstehend",
+      });
   }
 
   // Send confirmation email (fire and forget)

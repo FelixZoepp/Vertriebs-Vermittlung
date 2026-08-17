@@ -267,6 +267,43 @@ export async function sendTrackingAbfrage(
   });
 }
 
+export async function sendPartnerWillkommen(
+  email: string,
+  ansprechpartner: string,
+  firmenname: string
+) {
+  const resend = getResend();
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "https://vertriebs-vermittlung.vercel.app";
+
+  return resend.emails.send({
+    from: FROM,
+    to: email,
+    subject: `Willkommen bei Zoepp Media, ${firmenname}!`,
+    html: `
+      <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 0 auto;">
+        <h2>Hallo ${ansprechpartner},</h2>
+        <p>Herzlich willkommen bei Zoepp Media! Wir freuen uns, <strong>${firmenname}</strong> als Partner begrüßen zu dürfen.</p>
+        <p>So geht es weiter:</p>
+        <ol style="line-height: 1.8;">
+          <li>Schließe dein Abo ab (falls noch nicht geschehen)</li>
+          <li>Wir starten das Matching mit qualifizierten Vertrieblern</li>
+          <li>Du erhältst Kandidatenvorschläge innerhalb von 48 Stunden</li>
+          <li>Führe Gespräche und stelle direkt ein</li>
+        </ol>
+        <a href="${appUrl}/partner" style="display: inline-block; padding: 12px 24px; background: #111; color: #fff; text-decoration: none; border-radius: 6px; margin-top: 16px;">
+          Zum Partner-Dashboard
+        </a>
+        <p style="margin-top: 24px; color: #666; font-size: 14px;">
+          Bei Fragen erreichst du uns jederzeit.<br>
+          Dein Zoepp Media Team
+        </p>
+      </div>
+    `,
+  });
+}
+
 export async function sendBewerberEingang(
   email: string,
   vorname: string
