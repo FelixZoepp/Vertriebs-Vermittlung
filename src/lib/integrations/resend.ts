@@ -76,6 +76,37 @@ export async function sendPartnerKandidatVorgeschlagen(
   });
 }
 
+export async function sendPartnerKandidatVergeben(
+  email: string,
+  ansprechpartner: string,
+  kandidatAnzeigeName: string
+) {
+  const resend = getResend();
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "https://vertriebs-vermittlung.vercel.app";
+
+  return resend.emails.send({
+    from: FROM,
+    to: email,
+    subject: `Kandidat ${kandidatAnzeigeName} ist leider vergeben`,
+    html: `
+      <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 0 auto;">
+        <h2>Hallo ${ansprechpartner},</h2>
+        <p>Der Kandidat <strong>${kandidatAnzeigeName}</strong> wurde soeben von einem anderen Partner eingestellt und steht nicht mehr zur Verfügung.</p>
+        <p>Deine Anfrage wurde automatisch beendet — es entstehen dir keine Kosten.</p>
+        <p>Im Kandidaten-Pool warten weitere vorqualifizierte Vertriebler auf dich:</p>
+        <a href="${appUrl}/partner/pool" style="display: inline-block; padding: 12px 24px; background: #111; color: #fff; text-decoration: none; border-radius: 6px; margin-top: 16px;">
+          Zum Kandidaten-Pool
+        </a>
+        <p style="margin-top: 24px; color: #666; font-size: 14px;">
+          Dein Zoepp Media Team
+        </p>
+      </div>
+    `,
+  });
+}
+
 export async function sendAdminKandidatAngefragt(
   adminEmail: string,
   firmenname: string,

@@ -37,3 +37,5 @@ Content-Leads Solutions UG, Rhinstraße 137A, 10315 Berlin
 - R4: placement.status=eingestellt → Rechnung 750€, SEPA, idempotent
 - R5: contract_reports ≥100 → Rechnung 750€, nur 1x, nur nach Admin-Bestätigung, Frist 3 Monate
 - R6: Mahnlauf Tag 3/10/17, SEPA-Rücklastschrift → Alert
+- R7: placement.status=eingestellt → alle anderen offenen Placements des Kandidaten auto-abgebrochen + Partner-Mail (anonymisiert)
+- R8: Exklusivität – Kandidat immer nur bei EINEM Partner im Prozess; bei Ablehnung/Abbruch auto-Weitervermittlung an nächstbesten Partner (Score ≥70, bisherige Partner ausgeschlossen), sonst zurück in Pool

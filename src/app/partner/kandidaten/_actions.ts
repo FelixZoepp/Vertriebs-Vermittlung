@@ -1,7 +1,9 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/auth";
+import { closeCompetingPlacements } from "@/lib/rules/competing-placements";
+import { vermittleAnNaechstenPartner } from "@/lib/rules/exclusive-assignment";
 import { revalidatePath } from "next/cache";
 
 export async function updatePlacementStatus(
@@ -28,14 +30,29 @@ export async function updatePlacementStatus(
     updateData.eingestellt_am = new Date().toISOString().split("T")[0];
   }
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("placements")
     .update(updateData)
     .eq("id", placementId)
-    .eq("partner_id", partner.id);
+    .eq("partner_id", partner.id)
+    .select("candidate_id")
+    .single();
 
-  if (error) {
+  if (error || !updated) {
     return { error: "Status konnte nicht aktualisiert werden." };
+  }
+
+  if (newStatus === "eingestellt") {
+    // R7: Konkurrierende Anfragen anderer Partner automatisch beenden
+    // (Service-Client nötig, da RLS Partnern nur eigene Placements erlaubt)
+    const serviceClient = await createServiceClient();
+    await closeCompetingPlacements(serviceClient, updated.candidate_id, placementId);
+  }
+
+  if (newStatus === "abgelehnt") {
+    // R8: Kandidat automatisch an den nächstbesten Partner weitervermitteln
+    const serviceClient = await createServiceClient();
+    await vermittleAnNaechstenPartner(serviceClient, updated.candidate_id);
   }
 
   revalidatePath("/partner/kandidaten");

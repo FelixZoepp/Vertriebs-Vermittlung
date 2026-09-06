@@ -4,6 +4,7 @@ import { getAuthUser } from "@/lib/auth";
 import { createServiceClient } from "@/lib/supabase/server";
 import { isPartnerFreigeschaltet, type Candidate, type Partner } from "@/lib/types";
 import { calculateMatchScore } from "@/lib/rules/matching";
+import { OFFENE_PLACEMENT_STATUS } from "@/lib/rules/exclusive-assignment";
 import { sendAdminKandidatAngefragt } from "@/lib/integrations/resend";
 import { revalidatePath } from "next/cache";
 
@@ -43,17 +44,22 @@ export async function anfrageKandidat(candidateId: number): Promise<AnfrageResul
     return { success: false, error: "Kandidat ist nicht mehr verfügbar." };
   }
 
-  // Idempotenz: kein aktives Placement für dieses Partner/Kandidat-Paar
+  // R8: Exklusivität – Kandidat darf nur bei EINEM Partner gleichzeitig im Prozess sein
   const { data: existing } = await supabase
     .from("placements")
-    .select("id, status")
+    .select("id, partner_id")
     .eq("candidate_id", candidateId)
-    .eq("partner_id", partner.id)
-    .not("status", "in", "(abgelehnt,abgebrochen)")
+    .in("status", [...OFFENE_PLACEMENT_STATUS])
     .limit(1);
 
   if (existing && existing.length > 0) {
-    return { success: false, error: "Du hast diesen Kandidaten bereits angefragt." };
+    if (existing[0].partner_id === partner.id) {
+      return { success: false, error: "Du hast diesen Kandidaten bereits angefragt." };
+    }
+    return {
+      success: false,
+      error: "Dieser Kandidat ist aktuell bei einem anderen Unternehmen im Prozess.",
+    };
   }
 
   // Kapazität für Match-Score

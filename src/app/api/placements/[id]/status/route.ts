@@ -8,6 +8,8 @@ import {
 import {
   berechneMeilensteinFrist,
 } from "@/lib/rules/invoicing";
+import { closeCompetingPlacements } from "@/lib/rules/competing-placements";
+import { vermittleAnNaechstenPartner } from "@/lib/rules/exclusive-assignment";
 import { TRACKING_INTERVALS } from "@/lib/placement-stages";
 
 export async function PATCH(
@@ -79,6 +81,9 @@ export async function PATCH(
       onConflict: "placement_id,intervall",
       ignoreDuplicates: true,
     });
+
+    // R7: Konkurrierende Anfragen anderer Partner automatisch beenden
+    await closeCompetingPlacements(supabase, placement.candidate_id, placementId);
   }
 
   if (newStatus === "abgelehnt") {
@@ -103,6 +108,11 @@ export async function PATCH(
     aktion: "status_changed",
     payload: { from: placement.status, to: newStatus, ...(abgelehnt_grund ? { abgelehnt_grund } : {}) },
   });
+
+  // R8: Bei Ablehnung automatisch an den nächstbesten Partner weitervermitteln
+  if (newStatus === "abgelehnt") {
+    await vermittleAnNaechstenPartner(supabase, placement.candidate_id);
+  }
 
   return NextResponse.json({ placement: updated });
 }

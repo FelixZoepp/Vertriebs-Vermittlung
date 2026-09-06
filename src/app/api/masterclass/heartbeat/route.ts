@@ -326,12 +326,11 @@ async function handleVermittelbarAutomation(
   if (bestMatch.score >= 70) {
     const now = new Date().toISOString();
 
-    // Check for existing active placement
+    // R8: Exklusivität – kein offenes Placement bei irgendeinem Partner
     const { data: existing } = await supabase
       .from("placements")
       .select("id")
       .eq("candidate_id", candidateId)
-      .eq("partner_id", bestMatch.partner_id)
       .in("status", [
         "leadeingang",
         "vorstellungsgespraech",

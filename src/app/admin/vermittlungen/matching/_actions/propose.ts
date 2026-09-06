@@ -19,19 +19,21 @@ export async function proposeMatch(
   const supabase = await createServiceClient();
   const now = new Date().toISOString();
 
-  // Check for existing active placement between this candidate and partner
+  // R8: Exklusivität – Kandidat darf nur bei EINEM Partner gleichzeitig im Prozess sein
   const { data: existing } = await supabase
     .from("placements")
-    .select("id")
+    .select("id, partner_id")
     .eq("candidate_id", candidateId)
-    .eq("partner_id", partnerId)
     .in("status", ["leadeingang", "vorstellungsgespraech", "probetag", "eingestellt"])
     .limit(1);
 
   if (existing && existing.length > 0) {
     return {
       success: false,
-      error: "Dieser Kandidat wurde diesem Partner bereits zugeordnet.",
+      error:
+        existing[0].partner_id === partnerId
+          ? "Dieser Kandidat wurde diesem Partner bereits zugeordnet."
+          : "Dieser Kandidat ist bereits bei einem anderen Partner im Prozess (Exklusivität).",
     };
   }
 

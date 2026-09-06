@@ -1,6 +1,7 @@
 import { getAuthUser } from "@/lib/auth";
 import { createServiceClient } from "@/lib/supabase/server";
 import { calculateMatchScore } from "@/lib/rules/matching";
+import { OFFENE_PLACEMENT_STATUS } from "@/lib/rules/exclusive-assignment";
 import type { Candidate, Partner } from "@/lib/types";
 import { redirect } from "next/navigation";
 import { Target } from "lucide-react";
@@ -31,26 +32,38 @@ export default async function PoolPage() {
     .order("created_at", { ascending: false })
     .returns<Candidate[]>();
 
-  // Bestehende Placements dieses Partners (für "bereits angefragt")
-  const { data: placements } = await supabase
+  // Alle offenen Placements (R8: Exklusivität – Kandidat nur bei EINEM Partner sichtbar)
+  const { data: offenePlacements } = await supabase
     .from("placements")
-    .select("candidate_id, status")
-    .eq("partner_id", partner.id);
+    .select("candidate_id, partner_id, status")
+    .in("status", [...OFFENE_PLACEMENT_STATUS]);
 
+  // Eigene offene Anfragen → "bereits angefragt"
   const angefragteIds = new Set(
-    (placements || [])
-      .filter((p) => p.status !== "abgelehnt" && p.status !== "abgebrochen")
+    (offenePlacements || [])
+      .filter((p) => p.partner_id === partner.id)
       .map((p) => p.candidate_id)
   );
 
-  const aktivePlacements = (placements || []).filter((p) =>
-    ["leadeingang", "vorstellungsgespraech", "probetag"].includes(p.status)
+  // Kandidaten, die bei einem ANDEREN Partner im Prozess sind → ausblenden
+  const vergebeneIds = new Set(
+    (offenePlacements || [])
+      .filter((p) => p.partner_id !== partner.id)
+      .map((p) => p.candidate_id)
+  );
+
+  const aktivePlacements = (offenePlacements || []).filter(
+    (p) =>
+      p.partner_id === partner.id &&
+      ["leadeingang", "vorstellungsgespraech", "probetag"].includes(p.status)
   ).length;
 
   const partnerMitKapazitaet = { ...partner, aktuelle_placements: aktivePlacements };
 
   // Anonymisieren + Match-Score (kein Klarname vor aktiver Vermittlung)
-  const poolCandidates: PoolCandidate[] = (candidates || []).map((c) => {
+  const poolCandidates: PoolCandidate[] = (candidates || [])
+    .filter((c) => !vergebeneIds.has(c.id))
+    .map((c) => {
     const match = calculateMatchScore(c, partnerMitKapazitaet);
     return {
       id: c.id,
