@@ -73,6 +73,45 @@ export async function getInvoiceStatus(
   return invoice.status;
 }
 
+// Freischaltungsgebühr: einmalig, 999€ netto zzgl. 19% USt
+export const FREISCHALTUNG_NETTO_CENT = 99900;
+export const FREISCHALTUNG_UST_SATZ = 19;
+export const FREISCHALTUNG_BRUTTO_CENT = Math.round(
+  FREISCHALTUNG_NETTO_CENT * (1 + FREISCHALTUNG_UST_SATZ / 100)
+);
+
+export async function createFreischaltungCheckout(
+  customerId: string,
+  successUrl: string,
+  cancelUrl: string
+): Promise<Stripe.Checkout.Session> {
+  const stripe = getStripeClient();
+
+  return stripe.checkout.sessions.create({
+    customer: customerId,
+    mode: "payment",
+    line_items: [
+      {
+        price_data: {
+          currency: "eur",
+          unit_amount: FREISCHALTUNG_BRUTTO_CENT,
+          product_data: {
+            name: "Plattform-Freischaltung Vertriebs-Vermittlung",
+            description:
+              "Einmalige Freischaltungsgebühr: 999,00 € netto zzgl. 19% USt",
+          },
+        },
+        quantity: 1,
+      },
+    ],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    payment_method_types: ["card", "sepa_debit"],
+    invoice_creation: { enabled: true },
+    metadata: { typ: "freischaltung", source: "partner-registrierung" },
+  });
+}
+
 export async function createSubscriptionCheckout(
   customerId: string,
   successUrl: string,

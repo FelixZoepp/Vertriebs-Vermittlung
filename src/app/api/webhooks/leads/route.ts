@@ -150,6 +150,18 @@ export async function POST(request: Request) {
   // Normalize: Perspective sends nested or flat data — extract fields flexibly
   const body = normalizeWebhookBody(rawBody);
 
+  // Webhook secret auth BEFORE any DB writes.
+  // Accepted: X-Webhook-Secret Header (bevorzugt), ?secret= Query-Param oder body.secret (Legacy).
+  const webhookSecret = process.env.WEBHOOK_SECRET;
+  if (webhookSecret) {
+    const headerSecret = request.headers.get("x-webhook-secret");
+    const querySecret = new URL(request.url).searchParams.get("secret");
+    const provided = headerSecret || querySecret || body.secret;
+    if (provided !== webhookSecret) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
   // Log raw payload for debugging (stored in activity_log)
   const supabase = await createServiceClient();
   await supabase.from("activity_log").insert({
@@ -158,12 +170,6 @@ export async function POST(request: Request) {
     aktion: "raw_payload",
     payload: { raw: rawBody, normalized: body },
   });
-
-  // Optional webhook secret auth
-  const webhookSecret = process.env.WEBHOOK_SECRET;
-  if (webhookSecret && body.secret !== webhookSecret) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   const vorname = String(body.vorname || "").trim();
   const nachname = String(body.nachname || "").trim();

@@ -76,6 +76,32 @@ export async function sendPartnerKandidatVorgeschlagen(
   });
 }
 
+export async function sendAdminKandidatAngefragt(
+  adminEmail: string,
+  firmenname: string,
+  kandidatName: string,
+  placementId: number
+) {
+  const resend = getResend();
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL || "https://vertriebs-vermittlung.vercel.app";
+  return resend.emails.send({
+    from: FROM,
+    to: adminEmail,
+    subject: `Anfrage: ${firmenname} möchte ${kandidatName}`,
+    html: `
+      <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 0 auto;">
+        <h2>Neue Kandidaten-Anfrage</h2>
+        <p><strong>${firmenname}</strong> hat <strong>${kandidatName}</strong> aus dem Pool angefragt.</p>
+        <p>Die Vermittlung wurde automatisch angelegt und kann im Admin-Bereich verwaltet werden.</p>
+        <a href="${appUrl}/admin/vermittlungen/${placementId}" style="display: inline-block; padding: 12px 24px; background: #111; color: #fff; text-decoration: none; border-radius: 6px; margin-top: 16px;">
+          Vermittlung ansehen
+        </a>
+      </div>
+    `,
+  });
+}
+
 export async function sendRechnungVersendet(
   email: string,
   ansprechpartner: string,

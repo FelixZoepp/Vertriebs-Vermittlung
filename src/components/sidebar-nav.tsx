@@ -46,6 +46,7 @@ const navItems: Record<UserRole, NavItem[]> = {
   ],
   partner: [
     { label: "Dashboard", href: "/partner", icon: LayoutDashboard },
+    { label: "Kandidaten-Pool", href: "/partner/pool", icon: Target },
     { label: "Kandidaten", href: "/partner/kandidaten", icon: Users },
     { label: "Vertrags-Tracking", href: "/partner/vertraege", icon: FileText },
     { label: "Rechnungen", href: "/partner/rechnungen", icon: Receipt },

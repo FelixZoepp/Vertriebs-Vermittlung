@@ -1,7 +1,7 @@
 "use server";
 
 import { createServiceClient } from "@/lib/supabase/server";
-import { createCustomer, createSubscriptionCheckout } from "@/lib/integrations/stripe";
+import { createCustomer, createFreischaltungCheckout } from "@/lib/integrations/stripe";
 import { sendPartnerWillkommen } from "@/lib/integrations/resend";
 import { getCoordinatesForPLZ } from "@/lib/plz-data";
 import { redirect } from "next/navigation";
@@ -102,6 +102,7 @@ export async function registerPartner(
     status: "interessent",
     stripe_customer_id: stripeCustomer.id,
     abo_status: "keins",
+    freischaltung_status: "offen",
   });
 
   if (insertError) {
@@ -116,22 +117,22 @@ export async function registerPartner(
   // 4. Send welcome email (fire and forget)
   sendPartnerWillkommen(email, ansprechpartner, firmenname).catch(() => {});
 
-  // 5. Create Stripe Checkout session and redirect
+  // 5. Create Stripe Checkout session (einmalige Freischaltungsgebühr) and redirect
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL || "https://vertriebs-vermittlung.vercel.app";
 
   let checkoutUrl: string;
   try {
-    const session = await createSubscriptionCheckout(
+    const session = await createFreischaltungCheckout(
       stripeCustomer.id,
-      `${appUrl}/partner?abo=aktiviert`,
-      `${appUrl}/partner-werden/registrieren?abgebrochen=1`
+      `${appUrl}/partner?freischaltung=aktiviert`,
+      `${appUrl}/freischaltung?abgebrochen=1`
     );
     checkoutUrl = session.url!;
   } catch {
-    // Account is created, but checkout failed — redirect to partner dashboard
-    // They can subscribe later
-    redirect("/partner");
+    // Account is created, but checkout failed — Partner kann später über
+    // /freischaltung bezahlen
+    redirect("/freischaltung");
   }
 
   redirect(checkoutUrl);

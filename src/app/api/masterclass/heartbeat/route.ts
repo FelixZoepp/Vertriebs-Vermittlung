@@ -254,7 +254,7 @@ async function handleVermittelbarAutomation(
   }
 
   const kandidatName = `${candidate.vorname} ${candidate.nachname}`;
-  const adminEmail = process.env.ADMIN_EMAIL || "felixbusinessmail@gmx.de";
+  const adminEmail = process.env.ADMIN_EMAIL;
 
   // 1. Send congratulations email to candidate
   sendVermittelbarBenachrichtigung(candidate.email, candidate.vorname).catch(
@@ -262,9 +262,11 @@ async function handleVermittelbarAutomation(
   );
 
   // 2. Send admin notification
-  sendAdminNeuerVermittelbarer(adminEmail, kandidatName, candidate.id).catch(
-    (err) => console.error("Admin notification failed:", err)
-  );
+  if (adminEmail) {
+    sendAdminNeuerVermittelbarer(adminEmail, kandidatName, candidate.id).catch(
+      (err) => console.error("Admin notification failed:", err)
+    );
+  }
 
   // 3. Run matching against active partners
   const { data: partners, error: partnersError } = await supabase

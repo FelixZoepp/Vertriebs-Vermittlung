@@ -118,8 +118,7 @@ export async function changeStageAction(
 
     if (candidateForEmail) {
       const kandidatName = `${candidateForEmail.vorname} ${candidateForEmail.nachname}`;
-      const adminEmail =
-        process.env.ADMIN_EMAIL || "felixbusinessmail@gmx.de";
+      const adminEmail = process.env.ADMIN_EMAIL;
 
       // Fire-and-forget: congratulations email to candidate
       sendVermittelbarBenachrichtigung(
@@ -128,11 +127,13 @@ export async function changeStageAction(
       ).catch(() => {});
 
       // Fire-and-forget: admin notification
-      sendAdminNeuerVermittelbarer(
-        adminEmail,
-        kandidatName,
-        candidateId
-      ).catch(() => {});
+      if (adminEmail) {
+        sendAdminNeuerVermittelbarer(
+          adminEmail,
+          kandidatName,
+          candidateId
+        ).catch(() => {});
+      }
     }
   }
 

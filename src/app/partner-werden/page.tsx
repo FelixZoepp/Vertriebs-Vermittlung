@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   title:
     "Partner werden – Qualifizierte D2D-Vertriebler finden | Zoepp Media",
   description:
-    "Zugang zu qualifizierten, geschulten D2D-Vertrieblern — vermittelt in unter 48 Stunden. Ab 299 Euro/Monat. Jetzt Partner werden.",
+    "Zugang zu qualifizierten, geschulten D2D-Vertrieblern — vermittelt in unter 48 Stunden. Einmalige Freischaltung, danach nur Provision bei Erfolg. Jetzt Partner werden.",
   openGraph: {
     title: "Partner werden – Qualifizierte D2D-Vertriebler finden",
     description:
@@ -96,7 +96,7 @@ const FAQ_ITEMS = [
   {
     question: "Was kostet die Vermittlung?",
     answer:
-      "Der Plattformzugang kostet 299 Euro/Monat. Bei erfolgreicher Einstellung eines Kandidaten faellt eine einmalige Vermittlungsprovision von 750 Euro netto an. Es gibt keine versteckten Kosten.",
+      "Der Plattformzugang kostet einmalig 999 Euro netto (Freischaltungsgebuehr). Bei erfolgreicher Einstellung eines Kandidaten faellt eine Vermittlungsprovision von 750 Euro netto an, plus 750 Euro netto sobald der Vertriebler 100 Vertraege erreicht. Keine monatlichen Kosten, keine versteckten Gebuehren.",
   },
   {
     question: "Wie schnell bekomme ich Kandidaten?",
@@ -111,7 +111,7 @@ const FAQ_ITEMS = [
   {
     question: "Gibt es eine Mindestlaufzeit?",
     answer:
-      "Nein. Du kannst dein Abo jederzeit kuendigen. Es gibt keine Bindung und keine versteckten Fristen.",
+      "Nein. Die Freischaltung ist eine einmalige Gebuehr — es gibt kein Abo, keine Bindung und keine versteckten Fristen. Danach zahlst du nur bei erfolgreicher Vermittlung.",
   },
   {
     question: "Was passiert nach der Einstellung?",
@@ -275,17 +275,17 @@ export default function PartnerWerdenPage() {
               <div className="relative p-8 sm:p-10">
                 <div className="text-center">
                   <p className="text-sm font-medium uppercase tracking-wider text-red-400">
-                    Partner-Abo
+                    Plattform-Freischaltung
                   </p>
                   <div className="mt-4 flex items-baseline justify-center gap-1">
                     <span className="text-5xl font-bold text-white">
-                      299
+                      999
                     </span>
                     <span className="text-xl text-white/40">&euro;</span>
-                    <span className="ml-1 text-white/40">/Monat</span>
+                    <span className="ml-1 text-white/40">einmalig</span>
                   </div>
                   <p className="mt-2 text-sm text-white/40">
-                    zzgl. MwSt. &middot; Monatlich kuendbar
+                    netto zzgl. MwSt. &middot; Keine monatlichen Kosten
                   </p>
                 </div>
 

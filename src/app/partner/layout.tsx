@@ -1,4 +1,7 @@
 import { getAuthUser } from "@/lib/auth";
+import { createServiceClient } from "@/lib/supabase/server";
+import { isPartnerFreigeschaltet } from "@/lib/types";
+import { redirect } from "next/navigation";
 import { SidebarNav } from "@/components/sidebar-nav";
 
 export default async function PartnerLayout({
@@ -7,6 +10,20 @@ export default async function PartnerLayout({
   children: React.ReactNode;
 }) {
   const user = await getAuthUser();
+
+  // Gate: Partner ohne bezahlte Freischaltung → Zahlungsseite
+  if (user.role === "partner") {
+    const supabase = await createServiceClient();
+    const { data: partner } = await supabase
+      .from("partners")
+      .select("freischaltung_status, abo_status")
+      .eq("user_id", user.id)
+      .single();
+
+    if (partner && !isPartnerFreigeschaltet(partner)) {
+      redirect("/freischaltung");
+    }
+  }
 
   return (
     <div className="flex h-screen bg-background">

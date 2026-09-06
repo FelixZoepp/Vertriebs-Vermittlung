@@ -221,12 +221,13 @@ export function RegistrierenForm() {
                 Wird erstellt...
               </>
             ) : (
-              "Registrieren & Abo starten — 299 \u20AC/Monat"
+              "Registrieren & freischalten — 999 \u20AC einmalig"
             )}
           </Button>
           <p className="text-center text-xs text-white/30">
             Nach der Registrierung wirst du zur sicheren Zahlung ueber Stripe
-            weitergeleitet. Monatlich kuendbar.
+            weitergeleitet. Einmalige Freischaltungsgebuehr, netto zzgl. MwSt.
+            Keine monatlichen Kosten.
           </p>
         </div>
       </form>

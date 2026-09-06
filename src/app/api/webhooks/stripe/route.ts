@@ -73,6 +73,29 @@ export async function POST(request: NextRequest) {
 
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
+
+        // Einmalige Freischaltungsgebühr (999€ netto)
+        if (
+          session.mode === "payment" &&
+          session.customer &&
+          session.metadata?.typ === "freischaltung"
+        ) {
+          const customerId =
+            typeof session.customer === "string"
+              ? session.customer
+              : session.customer.id;
+
+          await supabase
+            .from("partners")
+            .update({
+              status: "aktiv",
+              freischaltung_status: "bezahlt",
+              freischaltung_bezahlt_am: new Date().toISOString(),
+            })
+            .eq("stripe_customer_id", customerId);
+          break;
+        }
+
         if (session.mode === "subscription" && session.customer) {
           const customerId =
             typeof session.customer === "string"

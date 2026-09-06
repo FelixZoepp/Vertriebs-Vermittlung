@@ -21,7 +21,21 @@ export interface Partner {
   vertrag_unterschrieben_am: string | null;
   stripe_subscription_id: string | null;
   abo_status: "keins" | "aktiv" | "gekuendigt" | "ueberfaellig";
+  freischaltung_status: "offen" | "bezahlt" | "befreit";
+  freischaltung_bezahlt_am: string | null;
   created_at: string;
+}
+
+/** Partner hat Plattform-Zugang (Freischaltung bezahlt/befreit oder Legacy-Abo aktiv) */
+export function isPartnerFreigeschaltet(partner: {
+  freischaltung_status: string;
+  abo_status: string;
+}): boolean {
+  return (
+    partner.freischaltung_status === "bezahlt" ||
+    partner.freischaltung_status === "befreit" ||
+    partner.abo_status === "aktiv"
+  );
 }
 
 export const STAGES = [
