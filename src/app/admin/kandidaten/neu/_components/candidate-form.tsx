@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { BRANCHEN } from "@/lib/types";
 
 interface CandidateFormProps {
   action: (formData: FormData) => Promise<void>;
@@ -67,24 +68,35 @@ export function CandidateForm({ action }: CandidateFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="branchenerfahrung">
-              Branchenerfahrung (kommagetrennt)
-            </Label>
-            <Input
-              id="branchenerfahrung"
-              name="branchenerfahrung"
-              placeholder="Energie, Telko, Glasfaser"
-            />
+            <Label>Vertriebsbereich</Label>
+            <div className="space-y-2">
+              {BRANCHEN.map((b) => (
+                <label
+                  key={b}
+                  className="flex cursor-pointer items-center gap-2 text-sm"
+                >
+                  <input
+                    type="checkbox"
+                    name="branchenerfahrung"
+                    value={b}
+                    defaultChecked={b === "D2D Vertrieb"}
+                    className="size-4 rounded border-input accent-primary"
+                  />
+                  {b}
+                </label>
+              ))}
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="umkreis_bereitschaft_km">
-              Umkreisbereitschaft (km)
+              Umkreisbereitschaft (km, max 100)
             </Label>
             <Input
               id="umkreis_bereitschaft_km"
               name="umkreis_bereitschaft_km"
               type="number"
               min={0}
+              max={100}
               defaultValue={50}
             />
           </div>

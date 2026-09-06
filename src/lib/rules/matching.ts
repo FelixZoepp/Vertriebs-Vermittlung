@@ -1,8 +1,10 @@
-import type { Candidate, Partner } from "@/lib/types";
+import { MAX_RADIUS_KM, type Candidate, type Partner } from "@/lib/types";
 
 /**
  * R3 – Matching mit Standort
- * Score: Distanz 50%, Branche 30%, Erfahrung 10%, Kapazität 10%
+ * Score: Distanz 60%, Branche 30%, Kapazität 10%
+ * Erfahrung wird NICHT gescort (nur als Notiz angezeigt).
+ * Radien sind auf MAX_RADIUS_KM (100 km) gedeckelt.
  */
 
 export function haversineKm(
@@ -37,15 +39,19 @@ export function calculateMatchScore(
 
   const distanz = haversineKm(candidate.lat, candidate.lng, partner.lat, partner.lng);
 
+  // Radien auf Maximum deckeln
+  const partnerRadius = Math.min(partner.suchradius_km, MAX_RADIUS_KM);
+  const kandidatRadius = Math.min(candidate.umkreis_bereitschaft_km, MAX_RADIUS_KM);
+
   // Ausschluss: außerhalb beider Radien
-  if (distanz > partner.suchradius_km || distanz > candidate.umkreis_bereitschaft_km) {
+  if (distanz > partnerRadius || distanz > kandidatRadius) {
     return null;
   }
 
   const gruende: string[] = [];
 
-  // Distanz-Score (50%): 0km = 100, max_radius = 0
-  const maxRadius = Math.min(partner.suchradius_km, candidate.umkreis_bereitschaft_km);
+  // Distanz-Score (60%): 0km = 100, max_radius = 0
+  const maxRadius = Math.min(partnerRadius, kandidatRadius);
   const distanzScore = Math.max(0, 100 - (distanz / maxRadius) * 100);
   gruende.push(`Distanz: ${Math.round(distanz)} km (${Math.round(distanzScore)}%)`);
 
@@ -61,9 +67,8 @@ export function calculateMatchScore(
   }
   gruende.push(`Branche: ${Math.round(branchenScore)}%`);
 
-  // Erfahrungs-Score (10%)
-  const erfahrungScore = Math.min(100, candidate.erfahrung_jahre * 20);
-  gruende.push(`Erfahrung: ${candidate.erfahrung_jahre} Jahre (${Math.round(erfahrungScore)}%)`);
+  // Erfahrung: nur als Notiz, fließt nicht in den Score ein
+  gruende.push(`Erfahrung: ${candidate.erfahrung_jahre} Jahre (Info)`);
 
   // Kapazitäts-Score (10%)
   const auslastung = partner.aktuelle_placements || 0;
@@ -74,9 +79,8 @@ export function calculateMatchScore(
   gruende.push(`Kapazität: ${partner.offene_stellen - auslastung} frei (${Math.round(kapazitaetScore)}%)`);
 
   const score = Math.round(
-    distanzScore * 0.5 +
+    distanzScore * 0.6 +
     branchenScore * 0.3 +
-    erfahrungScore * 0.1 +
     kapazitaetScore * 0.1
   );
 

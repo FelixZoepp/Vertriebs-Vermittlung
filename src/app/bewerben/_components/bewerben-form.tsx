@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { submitBewerbung } from "../_actions";
+import { BRANCHEN } from "@/lib/types";
 import { CheckCircle2, User, Briefcase, MapPin } from "lucide-react";
 
 export function BewerbenForm({ refParam }: { refParam: string | null }) {
@@ -113,9 +114,11 @@ export function BewerbenForm({ refParam }: { refParam: string | null }) {
                 name="umkreis_bereitschaft_km"
                 type="number"
                 min={0}
+                max={100}
                 defaultValue={30}
                 className="h-11"
               />
+              <p className="text-xs text-muted-foreground">Maximal 100 km</p>
             </div>
           </div>
 
@@ -137,15 +140,26 @@ export function BewerbenForm({ refParam }: { refParam: string | null }) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="branchenerfahrung">Branchenerfahrung</Label>
-              <Input
-                id="branchenerfahrung"
-                name="branchenerfahrung"
-                placeholder="z.B. Telko, Energie, Versicherung"
-                className="h-11"
-              />
+              <Label>Welcher Vertriebsbereich passt zu dir?</Label>
+              <div className="space-y-2">
+                {BRANCHEN.map((b) => (
+                  <label
+                    key={b}
+                    className="flex cursor-pointer items-center gap-2 text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      name="branchenerfahrung"
+                      value={b}
+                      defaultChecked={b === "D2D Vertrieb"}
+                      className="size-4 rounded border-input accent-red-600"
+                    />
+                    {b}
+                  </label>
+                ))}
+              </div>
               <p className="text-xs text-muted-foreground">
-                Mehrere Branchen mit Komma trennen
+                Mehrfachauswahl möglich
               </p>
             </div>
             <div className="space-y-2">

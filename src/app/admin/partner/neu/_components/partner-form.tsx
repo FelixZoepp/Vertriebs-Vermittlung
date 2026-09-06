@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BRANCHEN } from "@/lib/types";
 
 interface PartnerFormProps {
   action: (formData: FormData) => Promise<void>;
@@ -72,14 +73,24 @@ export function PartnerForm({ action }: PartnerFormProps) {
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="gesuchte_profile">
-              Gesuchte Profile (kommagetrennt)
-            </Label>
-            <Input
-              id="gesuchte_profile"
-              name="gesuchte_profile"
-              placeholder="D2D-Vertriebler, Teamleiter"
-            />
+            <Label>Gesuchte Vertriebsbereiche</Label>
+            <div className="space-y-2">
+              {BRANCHEN.map((b) => (
+                <label
+                  key={b}
+                  className="flex cursor-pointer items-center gap-2 text-sm"
+                >
+                  <input
+                    type="checkbox"
+                    name="gesuchte_profile"
+                    value={b}
+                    defaultChecked={b === "D2D Vertrieb"}
+                    className="size-4 rounded border-input accent-primary"
+                  />
+                  {b}
+                </label>
+              ))}
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="offene_stellen">Offene Stellen</Label>
@@ -92,12 +103,13 @@ export function PartnerForm({ action }: PartnerFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="suchradius_km">Suchradius (km)</Label>
+            <Label htmlFor="suchradius_km">Suchradius (km, max 100)</Label>
             <Input
               id="suchradius_km"
               name="suchradius_km"
               type="number"
               min={0}
+              max={100}
               defaultValue={50}
             />
           </div>

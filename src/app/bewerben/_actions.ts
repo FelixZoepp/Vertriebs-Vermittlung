@@ -3,6 +3,7 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { sendBewerberEingang } from "@/lib/integrations/resend";
 import { getCoordinatesForPLZ } from "@/lib/plz-data";
+import { BRANCHEN, MAX_RADIUS_KM } from "@/lib/types";
 
 export interface BewerbenResult {
   success: boolean;
@@ -20,20 +21,18 @@ export async function submitBewerbung(
   const ort = (formData.get("ort") as string)?.trim() || null;
   const erfahrungRaw = formData.get("erfahrung_jahre") as string;
   const erfahrung_jahre = erfahrungRaw ? parseInt(erfahrungRaw, 10) : 0;
-  const branchenerfahrungRaw = (
-    formData.get("branchenerfahrung") as string
-  )?.trim();
-  const branchenerfahrung = branchenerfahrungRaw
-    ? branchenerfahrungRaw
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean)
-    : [];
+  const branchenerfahrung = formData
+    .getAll("branchenerfahrung")
+    .map((b) => String(b).trim())
+    .filter((b) => (BRANCHEN as readonly string[]).includes(b));
   const fuehrerschein = formData.get("fuehrerschein") === "on";
   const verfuegbar_ab =
     (formData.get("verfuegbar_ab") as string)?.trim() || null;
   const umkreisRaw = formData.get("umkreis_bereitschaft_km") as string;
-  const umkreis_bereitschaft_km = umkreisRaw ? parseInt(umkreisRaw, 10) : 30;
+  const umkreis_bereitschaft_km = Math.min(
+    umkreisRaw ? parseInt(umkreisRaw, 10) : 30,
+    MAX_RADIUS_KM
+  );
   const quelle_detail =
     (formData.get("quelle_detail") as string)?.trim() || null;
 

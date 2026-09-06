@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { BRANCHEN, MAX_RADIUS_KM } from "@/lib/types";
 
 export async function updatePartnerSettings(formData: FormData) {
   const user = await getAuthUser();
@@ -16,15 +17,10 @@ export async function updatePartnerSettings(formData: FormData) {
     formData.get("suchradius_km") as string,
     10
   );
-  const gesuchteProfileRaw = (
-    formData.get("gesuchte_profile") as string
-  )?.trim();
-  const gesuchte_profile = gesuchteProfileRaw
-    ? gesuchteProfileRaw
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean)
-    : [];
+  const gesuchte_profile = formData
+    .getAll("gesuchte_profile")
+    .map((b) => String(b).trim())
+    .filter((b) => (BRANCHEN as readonly string[]).includes(b));
 
   const { data: partner } = await supabase
     .from("partners")
@@ -40,7 +36,7 @@ export async function updatePartnerSettings(formData: FormData) {
     .from("partners")
     .update({
       offene_stellen: isNaN(offeneStellen) ? 0 : offeneStellen,
-      suchradius_km: isNaN(suchradiusKm) ? 30 : suchradiusKm,
+      suchradius_km: Math.min(isNaN(suchradiusKm) ? 30 : suchradiusKm, MAX_RADIUS_KM),
       gesuchte_profile,
     })
     .eq("id", partner.id)

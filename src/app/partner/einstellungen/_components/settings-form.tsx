@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { Partner } from "@/lib/types";
+import { BRANCHEN, type Partner } from "@/lib/types";
 import { updatePartnerSettings } from "../_actions";
 
 export function SettingsForm({ partner }: { partner: Partner }) {
@@ -61,26 +61,38 @@ export function SettingsForm({ partner }: { partner: Partner }) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="suchradius_km">Suchradius (km)</Label>
+            <Label htmlFor="suchradius_km">Suchradius (km, max 100)</Label>
             <Input
               id="suchradius_km"
               name="suchradius_km"
               type="number"
               min={0}
+              max={100}
               defaultValue={partner.suchradius_km}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="gesuchte_profile">Gesuchte Profile</Label>
-            <Input
-              id="gesuchte_profile"
-              name="gesuchte_profile"
-              defaultValue={partner.gesuchte_profile.join(", ")}
-              placeholder="z.B. Telko, Energie, Glasfaser"
-            />
+            <Label>Gesuchte Vertriebsbereiche</Label>
+            <div className="space-y-2">
+              {BRANCHEN.map((b) => (
+                <label
+                  key={b}
+                  className="flex cursor-pointer items-center gap-2 text-sm"
+                >
+                  <input
+                    type="checkbox"
+                    name="gesuchte_profile"
+                    value={b}
+                    defaultChecked={partner.gesuchte_profile.includes(b)}
+                    className="size-4 rounded border-input accent-primary"
+                  />
+                  {b}
+                </label>
+              ))}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Mehrere Profile mit Komma trennen
+              Kandidaten aus diesen Bereichen werden dir bevorzugt empfohlen
             </p>
           </div>
 

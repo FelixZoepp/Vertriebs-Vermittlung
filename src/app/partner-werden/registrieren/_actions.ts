@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { createCustomer, createFreischaltungCheckout } from "@/lib/integrations/stripe";
 import { sendPartnerWillkommen } from "@/lib/integrations/resend";
 import { getCoordinatesForPLZ } from "@/lib/plz-data";
+import { BRANCHEN, MAX_RADIUS_KM } from "@/lib/types";
 import { redirect } from "next/navigation";
 
 export interface RegisterPartnerResult {
@@ -25,7 +26,14 @@ export async function registerPartner(
   const ort = (formData.get("ort") as string)?.trim() || null;
   const branche = (formData.get("branche") as string)?.trim() || null;
   const offeneStellen = parseInt(formData.get("offene_stellen") as string) || 1;
-  const suchradiusKm = parseInt(formData.get("suchradius_km") as string) || 50;
+  const suchradiusKm = Math.min(
+    parseInt(formData.get("suchradius_km") as string) || 50,
+    MAX_RADIUS_KM
+  );
+  const gesuchteProfile = formData
+    .getAll("gesuchte_profile")
+    .map((b) => String(b).trim())
+    .filter((b) => (BRANCHEN as readonly string[]).includes(b));
 
   // Validation
   if (!firmenname || !ansprechpartner || !email || !password) {
@@ -96,7 +104,7 @@ export async function registerPartner(
     lat: coords?.lat ?? null,
     lng: coords?.lng ?? null,
     branche,
-    gesuchte_profile: [],
+    gesuchte_profile: gesuchteProfile,
     offene_stellen: offeneStellen,
     suchradius_km: suchradiusKm,
     status: "interessent",

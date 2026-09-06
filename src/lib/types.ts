@@ -38,6 +38,18 @@ export function isPartnerFreigeschaltet(partner: {
   );
 }
 
+/** Feste Branchen der Plattform — Kandidaten und Partner-Suchprofile nutzen nur diese */
+export const BRANCHEN = [
+  "D2D Vertrieb",
+  "Kapitalanlagevertrieb",
+  "Telefonvertrieb",
+] as const;
+
+export type Branche = (typeof BRANCHEN)[number];
+
+/** Maximaler Suchradius / Umkreis in km */
+export const MAX_RADIUS_KM = 100;
+
 export const STAGES = [
   "eingang",
   "qualifiziert",

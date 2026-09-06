@@ -183,12 +183,24 @@ export async function POST(request: Request) {
   }
 
   // Parse branchenerfahrung: accept string[] or comma-separated string
-  let branchenerfahrung: string[] = [];
+  let branchenerfahrungRaw: string[] = [];
   if (Array.isArray(body.branchenerfahrung)) {
-    branchenerfahrung = body.branchenerfahrung.map(String).filter(Boolean);
+    branchenerfahrungRaw = body.branchenerfahrung.map(String).filter(Boolean);
   } else if (typeof body.branchenerfahrung === "string") {
-    branchenerfahrung = body.branchenerfahrung.split(",").map((s: string) => s.trim()).filter(Boolean);
+    branchenerfahrungRaw = body.branchenerfahrung.split(",").map((s: string) => s.trim()).filter(Boolean);
   }
+
+  // Auf feste Branchen mappen; unbekannte Werte → Standard "D2D Vertrieb"
+  const branchenerfahrung = branchenerfahrungRaw
+    .map((b): string | null => {
+      const lower = b.toLowerCase();
+      if (lower.includes("d2d") || lower.includes("door")) return "D2D Vertrieb";
+      if (lower.includes("kapital") || lower.includes("anlage") || lower.includes("finanz")) return "Kapitalanlagevertrieb";
+      if (lower.includes("telefon") || lower.includes("call") || lower.includes("phone")) return "Telefonvertrieb";
+      return null;
+    })
+    .filter((b): b is string => b !== null);
+  if (branchenerfahrung.length === 0) branchenerfahrung.push("D2D Vertrieb");
 
   const plz = String(body.plz || "").trim() || null;
   const coords = plz ? getCoordinatesForPLZ(plz) : null;
@@ -212,7 +224,7 @@ export async function POST(request: Request) {
       branchenerfahrung,
       fuehrerschein: Boolean(body.fuehrerschein),
       verfuegbar_ab: body.verfuegbar_ab ? String(body.verfuegbar_ab) : null,
-      umkreis_bereitschaft_km: Number(body.umkreis_bereitschaft_km) || 30,
+      umkreis_bereitschaft_km: Math.min(Number(body.umkreis_bereitschaft_km) || 30, 100),
       quelle,
       quelle_detail: String(body.quelle_detail || "").trim() || null,
       stage: "eingang",

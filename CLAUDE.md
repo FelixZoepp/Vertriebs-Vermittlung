@@ -33,7 +33,7 @@ Content-Leads Solutions UG, Rhinstraße 137A, 10315 Berlin
 ## Geschäftsregeln (in `/lib/rules/`)
 - R1: Stage→Qualifiziert → Masterclass-Mail mit Magic Link
 - R2: Heartbeat 15s, Pflichtmodule ≥95% → Stage 6 auto
-- R3: Stage 6 → Matching-Score (Distanz 50%, Branche 30%, Erfahrung 10%, Kapazität 10%), Top-3, Admin gibt frei
+- R3: Stage 6 → Matching-Score (Distanz 60%, Branche 30%, Kapazität 10%; Erfahrung nur Info; Radius max 100 km), Top-3, Admin gibt frei; Branchen fest: D2D Vertrieb, Kapitalanlagevertrieb, Telefonvertrieb
 - R4: placement.status=eingestellt → Rechnung 750€, SEPA, idempotent
 - R5: contract_reports ≥100 → Rechnung 750€, nur 1x, nur nach Admin-Bestätigung, Frist 3 Monate
 - R6: Mahnlauf Tag 3/10/17, SEPA-Rücklastschrift → Alert

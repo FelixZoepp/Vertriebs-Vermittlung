@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCoordinatesForPLZ } from "@/lib/plz-data";
+import { BRANCHEN, MAX_RADIUS_KM } from "@/lib/types";
 import { PartnerForm } from "./_components/partner-form";
 
 async function createPartner(formData: FormData) {
@@ -9,10 +10,10 @@ async function createPartner(formData: FormData) {
 
   const supabase = await createClient();
 
-  const gesuchteProfile = (formData.get("gesuchte_profile") as string)
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const gesuchteProfile = formData
+    .getAll("gesuchte_profile")
+    .map((b) => String(b).trim())
+    .filter((b) => (BRANCHEN as readonly string[]).includes(b));
 
   const plz = (formData.get("plz") as string) || null;
   const coords = plz ? getCoordinatesForPLZ(plz) : null;
@@ -30,8 +31,10 @@ async function createPartner(formData: FormData) {
     branche: (formData.get("branche") as string) || null,
     gesuchte_profile: gesuchteProfile,
     offene_stellen: parseInt(formData.get("offene_stellen") as string) || 0,
-    suchradius_km:
+    suchradius_km: Math.min(
       parseInt(formData.get("suchradius_km") as string) || 50,
+      MAX_RADIUS_KM
+    ),
     status: "interessent",
   });
 

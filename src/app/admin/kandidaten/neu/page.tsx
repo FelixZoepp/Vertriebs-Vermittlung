@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCoordinatesForPLZ } from "@/lib/plz-data";
+import { BRANCHEN, MAX_RADIUS_KM } from "@/lib/types";
 import { CandidateForm } from "./_components/candidate-form";
 
 async function createCandidate(formData: FormData) {
@@ -9,10 +10,10 @@ async function createCandidate(formData: FormData) {
 
   const supabase = await createClient();
 
-  const branchenerfahrung = (formData.get("branchenerfahrung") as string)
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const branchenerfahrung = formData
+    .getAll("branchenerfahrung")
+    .map((b) => String(b).trim())
+    .filter((b) => (BRANCHEN as readonly string[]).includes(b));
 
   const plz = (formData.get("plz") as string) || null;
   const coords = plz ? getCoordinatesForPLZ(plz) : null;
@@ -32,8 +33,10 @@ async function createCandidate(formData: FormData) {
     branchenerfahrung,
     fuehrerschein: formData.get("fuehrerschein") === "on",
     verfuegbar_ab: (formData.get("verfuegbar_ab") as string) || null,
-    umkreis_bereitschaft_km:
+    umkreis_bereitschaft_km: Math.min(
       parseInt(formData.get("umkreis_bereitschaft_km") as string) || 50,
+      MAX_RADIUS_KM
+    ),
     stage: "eingang",
     stage_changed_at: new Date().toISOString(),
   });

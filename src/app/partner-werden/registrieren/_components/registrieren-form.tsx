@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { registerPartner } from "../_actions";
+import { BRANCHEN } from "@/lib/types";
 import {
   Building2,
   User,
@@ -173,6 +174,26 @@ export function RegistrierenForm() {
             <Briefcase className="h-4 w-4 text-red-500/70" />
             <span>Stellenprofil</span>
           </div>
+          <div className="space-y-2">
+            <Label className="text-white/70">Gesuchte Vertriebsbereiche</Label>
+            <div className="space-y-2">
+              {BRANCHEN.map((b) => (
+                <label
+                  key={b}
+                  className="flex cursor-pointer items-center gap-2 text-sm text-white/70"
+                >
+                  <input
+                    type="checkbox"
+                    name="gesuchte_profile"
+                    value={b}
+                    defaultChecked={b === "D2D Vertrieb"}
+                    className="size-4 rounded border-white/10 accent-red-600"
+                  />
+                  {b}
+                </label>
+              ))}
+            </div>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="offene_stellen" className="text-white/70">
@@ -189,13 +210,14 @@ export function RegistrierenForm() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="suchradius_km" className="text-white/70">
-                Suchradius (km)
+                Suchradius (km, max 100)
               </Label>
               <Input
                 id="suchradius_km"
                 name="suchradius_km"
                 type="number"
                 min={5}
+                max={100}
                 defaultValue={50}
                 className="h-11 border-white/10 bg-white/5 text-white placeholder:text-white/30 focus-visible:border-red-500/50 focus-visible:ring-red-500/20"
               />
