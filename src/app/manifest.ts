@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "CRM-Plattform für D2D-Vertriebler-Vermittlung",
     start_url: "/login",
     display: "standalone",
-    background_color: "#09090b",
+    background_color: "#ffffff",
     theme_color: "#c8102e",
     icons: [
       {
