@@ -11,52 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { UserRole } from "@/lib/auth";
-import {
-  LayoutDashboard,
-  Users,
-  Building2,
-  Handshake,
-  Target,
-  FileText,
-  Film,
-  UserCircle,
-  GraduationCap,
-  Settings,
-  Receipt,
-  LogOut,
-  ChevronRight,
-  type LucideIcon,
-} from "lucide-react";
-
-interface NavItem {
-  label: string;
-  href: string;
-  icon: LucideIcon;
-}
-
-const navItems: Record<UserRole, NavItem[]> = {
-  admin: [
-    { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-    { label: "Kandidaten", href: "/admin/kandidaten", icon: Users },
-    { label: "Partner", href: "/admin/partner", icon: Building2 },
-    { label: "Vermittlungen", href: "/admin/vermittlungen", icon: Handshake },
-    { label: "Matching", href: "/admin/vermittlungen/matching", icon: Target },
-    { label: "Rechnungen", href: "/admin/rechnungen", icon: Receipt },
-    { label: "Masterclass", href: "/admin/masterclass", icon: GraduationCap },
-  ],
-  partner: [
-    { label: "Dashboard", href: "/partner", icon: LayoutDashboard },
-    { label: "Kandidaten-Pool", href: "/partner/pool", icon: Target },
-    { label: "Kandidaten", href: "/partner/kandidaten", icon: Users },
-    { label: "Vertrags-Tracking", href: "/partner/vertraege", icon: FileText },
-    { label: "Rechnungen", href: "/partner/rechnungen", icon: Receipt },
-    { label: "Einstellungen", href: "/partner/einstellungen", icon: Settings },
-  ],
-  candidate: [
-    { label: "Profil", href: "/kandidat", icon: UserCircle },
-    { label: "Masterclass", href: "/kandidat/masterclass", icon: GraduationCap },
-  ],
-};
+import { navItems, isNavItemActive, logout } from "@/components/nav-items";
+import { LogOut, ChevronRight } from "lucide-react";
 
 interface SidebarNavProps {
   role: UserRole;
@@ -76,10 +32,8 @@ export function SidebarNav({ role, userName, email }: SidebarNavProps) {
         .slice(0, 2)
     : email[0].toUpperCase();
 
-  const roleBase = role === "candidate" ? "kandidat" : role;
-
   return (
-    <aside className="flex h-screen w-60 flex-col bg-gradient-to-b from-[#1a0a0a] to-[#0d0507] text-white">
+    <aside className="hidden h-dvh w-60 flex-col bg-gradient-to-b from-[#1a0a0a] to-[#0d0507] text-white md:flex">
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 border-b border-white/10 px-5">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-red-500 to-red-700 shadow-lg shadow-red-500/20">
@@ -97,10 +51,7 @@ export function SidebarNav({ role, userName, email }: SidebarNavProps) {
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
         {items.map((item) => {
           const Icon = item.icon;
-          const isExactMatch = item.href === pathname;
-          const isPrefixMatch =
-            item.href !== `/${roleBase}` && pathname.startsWith(item.href);
-          const isActive = isExactMatch || isPrefixMatch;
+          const isActive = isNavItemActive(item, pathname, role);
 
           return (
             <Link
@@ -145,15 +96,7 @@ export function SidebarNav({ role, userName, email }: SidebarNavProps) {
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-52">
-            <DropdownMenuItem
-              onClick={() => {
-                const form = document.createElement("form");
-                form.method = "POST";
-                form.action = "/api/auth/logout";
-                document.body.appendChild(form);
-                form.submit();
-              }}
-            >
+            <DropdownMenuItem onClick={logout}>
               <LogOut className="mr-2 h-4 w-4" />
               Abmelden
             </DropdownMenuItem>

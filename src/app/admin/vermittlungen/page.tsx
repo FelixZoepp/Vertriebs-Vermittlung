@@ -41,7 +41,60 @@ export default async function VermittlungenPage() {
         </Link>
       </div>
 
-      <div className="mt-6 overflow-x-auto">
+      {/* Mobil: Card-Liste */}
+      <div className="mt-6 flex flex-col gap-2 md:hidden">
+        {(!placements || placements.length === 0) && (
+          <p className="rounded-lg border border-dashed py-10 text-center text-sm text-muted-foreground">
+            Noch keine Vermittlungen vorhanden.
+          </p>
+        )}
+        {(placements || []).map((p: any) => (
+          <Link
+            key={p.id}
+            href={`/admin/vermittlungen/${p.id}`}
+            className="rounded-lg border bg-card p-3 text-sm shadow-sm transition-colors active:bg-muted/50"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <p className="font-medium">
+                {p.candidates?.vorname} {p.candidates?.nachname}
+              </p>
+              <span
+                className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                  STATUS_COLORS[p.status] || ""
+                }`}
+              >
+                {STATUS_LABELS[p.status] || p.status}
+              </span>
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              → {p.partners?.firmenname}
+              {p.partners?.ort ? ` · ${p.partners.ort}` : ""}
+            </p>
+            <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-2">
+                <span className="h-1.5 w-16 rounded-full bg-muted">
+                  <span
+                    className="block h-1.5 rounded-full bg-green-500"
+                    style={{ width: `${Math.min(100, p.vertraege_gesamt)}%` }}
+                  />
+                </span>
+                <span className="font-mono">{p.vertraege_gesamt}/100</span>
+              </span>
+              <span className="flex items-center gap-2">
+                {p.match_score != null && (
+                  <span className="font-mono font-medium text-foreground">
+                    {p.match_score}
+                  </span>
+                )}
+                {new Date(p.vorgeschlagen_am).toLocaleDateString("de-DE")}
+              </span>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* Desktop: Tabelle */}
+      <div className="mt-6 hidden overflow-x-auto md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left text-muted-foreground">

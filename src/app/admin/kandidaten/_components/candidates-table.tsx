@@ -122,8 +122,57 @@ export function CandidatesTable({ candidates }: CandidatesTableProps) {
         })}
       </div>
 
-      {/* Table */}
-      <div className="mt-4 overflow-x-auto rounded-lg border">
+      {/* Mobil: Card-Liste */}
+      <div className="mt-4 flex flex-col gap-2 md:hidden">
+        {filtered.length === 0 ? (
+          <p className="rounded-lg border border-dashed py-10 text-center text-sm text-muted-foreground">
+            {search || stageFilter !== "alle"
+              ? "Keine Kandidaten gefunden."
+              : "Noch keine Kandidaten vorhanden."}
+          </p>
+        ) : (
+          filtered.map((c) => {
+            const daysInStage = getDaysInStage(c.stage_changed_at);
+            const isStale = daysInStage >= 7;
+
+            return (
+              <Link
+                key={c.id}
+                href={`/admin/kandidaten/${c.id}`}
+                className="rounded-lg border bg-card p-3 text-sm shadow-sm transition-colors active:bg-muted/50"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-medium">
+                    {c.vorname} {c.nachname}
+                  </p>
+                  <StageBadge stage={c.stage} />
+                </div>
+                <p className="mt-1 truncate text-xs text-muted-foreground">
+                  {c.email}
+                </p>
+                <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span>
+                    {c.plz} {c.ort}
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span className="capitalize">{c.quelle}</span>
+                    <span
+                      className={`tabular-nums ${
+                        isStale ? "font-medium text-red-600" : ""
+                      }`}
+                    >
+                      {daysInStage}d
+                    </span>
+                  </span>
+                </div>
+              </Link>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop: Tabelle */}
+      <div className="mt-4 hidden overflow-x-auto rounded-lg border md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50 text-left">

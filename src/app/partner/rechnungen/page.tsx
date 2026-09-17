@@ -103,7 +103,53 @@ export default async function PartnerRechnungenPage() {
         </div>
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-lg border bg-card shadow-sm">
+      {/* Mobil: Card-Liste */}
+      <div className="mt-6 flex flex-col gap-2 md:hidden">
+        {typedInvoices.length === 0 && (
+          <div className="rounded-lg border border-dashed py-12 text-center text-sm text-muted-foreground">
+            <Receipt className="mx-auto mb-2 h-8 w-8 text-muted-foreground/30" />
+            Noch keine Rechnungen vorhanden.
+          </div>
+        )}
+        {typedInvoices.map((inv) => (
+          <div
+            key={inv.id}
+            className="rounded-lg border bg-card p-3 text-sm shadow-sm"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="font-medium">{inv.rechnungsnummer ?? "—"}</p>
+                <p className="text-xs text-muted-foreground">
+                  {TYP_LABELS[inv.typ] ?? inv.typ}
+                </p>
+              </div>
+              <Badge
+                variant={getStatusBadgeVariant(inv.status)}
+                className="gap-1.5"
+              >
+                <span
+                  className={`inline-block h-1.5 w-1.5 rounded-full ${getStatusDotColor(inv.status)}`}
+                />
+                {STATUS_LABELS[inv.status] ?? inv.status}
+              </Badge>
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+              <span>
+                Fällig:{" "}
+                {inv.faellig_am
+                  ? new Date(inv.faellig_am).toLocaleDateString("de-DE")
+                  : "—"}
+              </span>
+              <span className="text-sm font-medium tabular-nums text-foreground">
+                {formatCent(inv.brutto_cent)}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: Tabelle */}
+      <div className="mt-6 hidden overflow-x-auto rounded-lg border bg-card shadow-sm md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50 text-left">

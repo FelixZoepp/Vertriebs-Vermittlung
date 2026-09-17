@@ -17,9 +17,18 @@ import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { STAGES, type Candidate, type Stage } from "@/lib/types";
 import { KanbanColumn } from "./kanban-column";
 import { KanbanCard } from "./kanban-card";
+import { KanbanMobile } from "./kanban-mobile";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 interface KanbanBoardProps {
   candidates: Candidate[];
+}
+
+interface RejectState {
+  candidateId: number;
+  candidateName: string;
+  previousStage: Stage;
 }
 
 export function KanbanBoard({ candidates: initialCandidates }: KanbanBoardProps) {
@@ -27,6 +36,8 @@ export function KanbanBoard({ candidates: initialCandidates }: KanbanBoardProps)
   const [activeCandidate, setActiveCandidate] = useState<Candidate | null>(null);
   const [dragStartStage, setDragStartStage] = useState<Stage | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [rejectState, setRejectState] = useState<RejectState | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -57,6 +68,105 @@ export function KanbanBoard({ candidates: initialCandidates }: KanbanBoardProps)
       return candidates.find((c) => c.id === id);
     },
     [candidates]
+  );
+
+  const revertCandidate = useCallback((candidateId: number, stage: Stage) => {
+    setCandidates((prev) =>
+      prev.map((c) => (c.id === candidateId ? { ...c, stage } : c))
+    );
+  }, []);
+
+  /** Gemeinsame Stage-Änderung: optimistisches Update + PATCH + Revert bei Fehler. */
+  const performStageChange = useCallback(
+    async (
+      candidateId: number,
+      targetStage: Stage,
+      previousStage: Stage,
+      ablehnungsgrund?: string
+    ) => {
+      setError(null);
+      setCandidates((prev) =>
+        prev.map((c) =>
+          c.id === candidateId ? { ...c, stage: targetStage } : c
+        )
+      );
+
+      try {
+        const body: { stage: Stage; ablehnungsgrund?: string } = {
+          stage: targetStage,
+        };
+        if (ablehnungsgrund) {
+          body.ablehnungsgrund = ablehnungsgrund;
+        }
+
+        const res = await fetch(`/api/candidates/${candidateId}/stage`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || "Stage-Update fehlgeschlagen");
+        }
+
+        const { candidate: updated } = await res.json();
+        setCandidates((prev) =>
+          prev.map((c) => (c.id === candidateId ? updated : c))
+        );
+      } catch (err) {
+        revertCandidate(candidateId, previousStage);
+        setError(
+          err instanceof Error ? err.message : "Stage-Update fehlgeschlagen"
+        );
+        setTimeout(() => setError(null), 5000);
+      }
+    },
+    [revertCandidate]
+  );
+
+  /** Öffnet den Ablehnungs-Dialog (statt window.prompt). */
+  const openRejectDialog = useCallback(
+    (candidate: Candidate, previousStage: Stage) => {
+      setRejectReason("");
+      setRejectState({
+        candidateId: candidate.id,
+        candidateName: `${candidate.vorname} ${candidate.nachname}`,
+        previousStage,
+      });
+    },
+    []
+  );
+
+  const confirmReject = useCallback(() => {
+    if (!rejectState || !rejectReason.trim()) return;
+    performStageChange(
+      rejectState.candidateId,
+      "abgelehnt",
+      rejectState.previousStage,
+      rejectReason.trim()
+    );
+    setRejectState(null);
+  }, [rejectState, rejectReason, performStageChange]);
+
+  const cancelReject = useCallback(() => {
+    if (rejectState) {
+      // Falls per Drag schon optimistisch verschoben: zurücksetzen
+      revertCandidate(rejectState.candidateId, rejectState.previousStage);
+    }
+    setRejectState(null);
+  }, [rejectState, revertCandidate]);
+
+  /** Stage-Wechsel aus der Mobilansicht (Dropdown-Menü). */
+  const handleMobileStageChange = useCallback(
+    (candidate: Candidate, targetStage: Stage) => {
+      if (targetStage === "abgelehnt") {
+        openRejectDialog(candidate, candidate.stage);
+        return;
+      }
+      performStageChange(candidate.id, targetStage, candidate.stage);
+    },
+    [openRejectDialog, performStageChange]
   );
 
   const handleDragStart = useCallback(
@@ -106,13 +216,14 @@ export function KanbanBoard({ candidates: initialCandidates }: KanbanBoardProps)
   );
 
   const handleDragEnd = useCallback(
-    async (event: DragEndEvent) => {
+    (event: DragEndEvent) => {
       const { active, over } = event;
       const previousStage = dragStartStage;
+      const draggedCandidate = activeCandidate;
       setActiveCandidate(null);
       setDragStartStage(null);
 
-      if (!over || !previousStage) return;
+      if (!over || !previousStage || !draggedCandidate) return;
 
       const activeId = active.id as number;
       const overData = over.data.current;
@@ -130,67 +241,25 @@ export function KanbanBoard({ candidates: initialCandidates }: KanbanBoardProps)
 
       // No change -- drop back where it started
       if (targetStage === previousStage) {
-        setCandidates((prev) =>
-          prev.map((c) =>
-            c.id === activeId ? { ...c, stage: previousStage } : c
-          )
-        );
+        revertCandidate(activeId, previousStage);
         return;
       }
 
-      setError(null);
-
-      try {
-        const body: { stage: Stage; ablehnungsgrund?: string } = {
-          stage: targetStage,
-        };
-
-        // If moving to abgelehnt, prompt for reason
-        if (targetStage === "abgelehnt") {
-          const reason = window.prompt("Ablehnungsgrund eingeben:");
-          if (!reason) {
-            // Revert if no reason given
-            setCandidates((prev) =>
-              prev.map((c) =>
-                c.id === activeId ? { ...c, stage: previousStage } : c
-              )
-            );
-            return;
-          }
-          body.ablehnungsgrund = reason;
-        }
-
-        const res = await fetch(`/api/candidates/${activeId}/stage`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || "Stage-Update fehlgeschlagen");
-        }
-
-        const { candidate: updated } = await res.json();
-
-        // Update with server response
-        setCandidates((prev) =>
-          prev.map((c) => (c.id === activeId ? updated : c))
-        );
-      } catch (err) {
-        // Revert on error
-        setCandidates((prev) =>
-          prev.map((c) =>
-            c.id === activeId ? { ...c, stage: previousStage } : c
-          )
-        );
-        setError(
-          err instanceof Error ? err.message : "Stage-Update fehlgeschlagen"
-        );
-        setTimeout(() => setError(null), 5000);
+      // Ablehnung: Grund per Dialog erfassen (Karte bleibt optimistisch liegen)
+      if (targetStage === "abgelehnt") {
+        openRejectDialog(draggedCandidate, previousStage);
+        return;
       }
+
+      performStageChange(activeId, targetStage, previousStage);
     },
-    [dragStartStage]
+    [
+      dragStartStage,
+      activeCandidate,
+      revertCandidate,
+      openRejectDialog,
+      performStageChange,
+    ]
   );
 
   return (
@@ -201,7 +270,14 @@ export function KanbanBoard({ candidates: initialCandidates }: KanbanBoardProps)
         </div>
       )}
 
-      <div className="flex gap-3 overflow-x-auto pb-4">
+      {/* Mobil: Stage-Tabs + Kartenliste */}
+      <KanbanMobile
+        candidatesByStage={candidatesByStage}
+        onStageChange={handleMobileStageChange}
+      />
+
+      {/* Desktop: Drag-and-Drop-Board */}
+      <div className="hidden gap-3 overflow-x-auto pb-4 md:flex">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -224,6 +300,44 @@ export function KanbanBoard({ candidates: initialCandidates }: KanbanBoardProps)
           </DragOverlay>
         </DndContext>
       </div>
+
+      {/* Ablehnungs-Dialog */}
+      {rejectState && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center"
+          onClick={cancelReject}
+        >
+          <div
+            className="w-full max-w-md rounded-xl border bg-background p-5 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-base font-semibold">Kandidat ablehnen</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {rejectState.candidateName} wird auf „Abgelehnt" gesetzt. Bitte
+              Grund angeben:
+            </p>
+            <Textarea
+              autoFocus
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Ablehnungsgrund…"
+              className="mt-3 min-h-24"
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" onClick={cancelReject}>
+                Abbrechen
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={!rejectReason.trim()}
+                onClick={confirmReject}
+              >
+                Ablehnen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

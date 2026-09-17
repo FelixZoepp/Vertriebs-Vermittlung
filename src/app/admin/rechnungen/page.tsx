@@ -89,7 +89,67 @@ export default async function RechnungenPage() {
         </div>
       )}
 
-      <div className="mt-6 overflow-x-auto">
+      {/* Mobil: Card-Liste */}
+      <div className="mt-6 flex flex-col gap-2 md:hidden">
+        {(!invoices || invoices.length === 0) && (
+          <p className="rounded-lg border border-dashed py-10 text-center text-sm text-muted-foreground">
+            Noch keine Rechnungen vorhanden.
+          </p>
+        )}
+        {(invoices || []).map((inv: any) => (
+          <div
+            key={inv.id}
+            className="rounded-lg border bg-card p-3 text-sm shadow-sm"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="truncate font-medium">
+                  {inv.partners?.firmenname}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {inv.placements?.candidates?.vorname}{" "}
+                  {inv.placements?.candidates?.nachname} ·{" "}
+                  {inv.typ === "einstellung" ? "Einstellung" : "100 Verträge"}
+                </p>
+              </div>
+              <span
+                className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                  STATUS_COLORS[inv.status] || ""
+                }`}
+              >
+                {inv.status.charAt(0).toUpperCase() + inv.status.slice(1)}
+              </span>
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-2 text-xs">
+              <span className="font-mono text-muted-foreground">
+                {inv.rechnungsnummer || `E-${inv.id}`}
+              </span>
+              <span className="font-mono font-medium">
+                {formatCent(inv.brutto_cent)}
+              </span>
+            </div>
+            <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+              <span>
+                Fällig:{" "}
+                {inv.faellig_am
+                  ? new Date(inv.faellig_am).toLocaleDateString("de-DE")
+                  : "---"}
+              </span>
+              <span>
+                {inv.status === "entwurf" && (
+                  <SendInvoiceButton invoiceId={inv.id} />
+                )}
+                {inv.status === "fehlgeschlagen" && (
+                  <RetryInvoiceButton invoiceId={inv.id} />
+                )}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: Tabelle */}
+      <div className="mt-6 hidden overflow-x-auto md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left text-muted-foreground">

@@ -64,7 +64,36 @@ export default async function PartnerListPage() {
         </Link>
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-lg border">
+      {/* Mobil: Card-Liste */}
+      <div className="mt-6 flex flex-col gap-2 md:hidden">
+        {(!partners || partners.length === 0) && (
+          <p className="rounded-lg border border-dashed py-10 text-center text-sm text-muted-foreground">
+            Noch keine Partner vorhanden.
+          </p>
+        )}
+        {partners?.map((p: Partner) => (
+          <Link
+            key={p.id}
+            href={`/admin/partner/${p.id}`}
+            className="rounded-lg border bg-card p-3 text-sm shadow-sm transition-colors active:bg-muted/50"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <p className="font-medium">{p.firmenname}</p>
+              <PartnerStatusBadge status={p.status} />
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {p.ansprechpartner}
+              {p.ort ? ` · ${p.ort}` : ""}
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Offene Stellen: {p.offene_stellen}
+            </p>
+          </Link>
+        ))}
+      </div>
+
+      {/* Desktop: Tabelle */}
+      <div className="mt-6 hidden overflow-x-auto rounded-lg border md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50 text-left">
