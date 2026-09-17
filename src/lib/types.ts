@@ -26,11 +26,18 @@ export interface Partner {
   created_at: string;
 }
 
+/**
+ * Feature-Flag: Pool-Freischaltung (999€ Bezahl-Gate) aktiv?
+ * Auf true setzen, um Zahlungsseite, Checkout und Preisanzeige wieder zu aktivieren.
+ */
+export const FREISCHALTUNG_AKTIV = false;
+
 /** Partner hat Plattform-Zugang (Freischaltung bezahlt/befreit oder Legacy-Abo aktiv) */
 export function isPartnerFreigeschaltet(partner: {
   freischaltung_status: string;
   abo_status: string;
 }): boolean {
+  if (!FREISCHALTUNG_AKTIV) return true;
   return (
     partner.freischaltung_status === "bezahlt" ||
     partner.freischaltung_status === "befreit" ||

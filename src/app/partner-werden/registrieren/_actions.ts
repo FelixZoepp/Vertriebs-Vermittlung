@@ -4,7 +4,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { createCustomer, createFreischaltungCheckout } from "@/lib/integrations/stripe";
 import { sendPartnerWillkommen } from "@/lib/integrations/resend";
 import { getCoordinatesForPLZ } from "@/lib/plz-data";
-import { BRANCHEN, MAX_RADIUS_KM } from "@/lib/types";
+import { BRANCHEN, FREISCHALTUNG_AKTIV, MAX_RADIUS_KM } from "@/lib/types";
 import { redirect } from "next/navigation";
 
 export interface RegisterPartnerResult {
@@ -125,7 +125,12 @@ export async function registerPartner(
   // 4. Send welcome email (fire and forget)
   sendPartnerWillkommen(email, ansprechpartner, firmenname).catch(() => {});
 
-  // 5. Create Stripe Checkout session (einmalige Freischaltungsgebühr) and redirect
+  // 5. Freischaltung deaktiviert → direkt zum Login, kein Checkout
+  if (!FREISCHALTUNG_AKTIV) {
+    redirect("/login");
+  }
+
+  // 5b. Create Stripe Checkout session (einmalige Freischaltungsgebühr) and redirect
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL || "https://vertriebs-vermittlung.vercel.app";
 

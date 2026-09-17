@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { registerPartner } from "../_actions";
-import { BRANCHEN } from "@/lib/types";
+import { BRANCHEN, FREISCHALTUNG_AKTIV } from "@/lib/types";
 import {
   Building2,
   User,
@@ -243,13 +243,15 @@ export function RegistrierenForm() {
                 Wird erstellt...
               </>
             ) : (
-              "Registrieren & freischalten — 999 \u20AC einmalig"
+              FREISCHALTUNG_AKTIV
+                ? "Registrieren & freischalten — 999 \u20AC einmalig"
+                : "Kostenlos registrieren"
             )}
           </Button>
           <p className="text-center text-xs text-white/30">
-            Nach der Registrierung wirst du zur sicheren Zahlung ueber Stripe
-            weitergeleitet. Einmalige Freischaltungsgebuehr, netto zzgl. MwSt.
-            Keine monatlichen Kosten.
+            {FREISCHALTUNG_AKTIV
+              ? "Nach der Registrierung wirst du zur sicheren Zahlung ueber Stripe weitergeleitet. Einmalige Freischaltungsgebuehr, netto zzgl. MwSt. Keine monatlichen Kosten."
+              : "Nach der Registrierung kannst du dich direkt einloggen. Kosten fallen erst bei erfolgreicher Vermittlung an."}
           </p>
         </div>
       </form>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { FREISCHALTUNG_AKTIV } from "@/lib/types";
 import {
   Users,
   MapPin,
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
   title:
     "Partner werden – Qualifizierte D2D-Vertriebler finden | Zoepp Media",
   description:
-    "Zugang zu qualifizierten, geschulten D2D-Vertrieblern — vermittelt in unter 48 Stunden. Einmalige Freischaltung, danach nur Provision bei Erfolg. Jetzt Partner werden.",
+    "Zugang zu qualifizierten, geschulten D2D-Vertrieblern — vermittelt in unter 48 Stunden. Nur Provision bei Erfolg. Jetzt Partner werden.",
   openGraph: {
     title: "Partner werden – Qualifizierte D2D-Vertriebler finden",
     description:
@@ -95,8 +96,9 @@ const FAQ_ITEMS = [
   },
   {
     question: "Was kostet die Vermittlung?",
-    answer:
-      "Der Plattformzugang kostet einmalig 999 Euro netto (Freischaltungsgebuehr). Bei erfolgreicher Einstellung eines Kandidaten faellt eine Vermittlungsprovision von 750 Euro netto an, plus 750 Euro netto sobald der Vertriebler 100 Vertraege erreicht. Keine monatlichen Kosten, keine versteckten Gebuehren.",
+    answer: FREISCHALTUNG_AKTIV
+      ? "Der Plattformzugang kostet einmalig 999 Euro netto (Freischaltungsgebuehr). Bei erfolgreicher Einstellung eines Kandidaten faellt eine Vermittlungsprovision von 750 Euro netto an, plus 750 Euro netto sobald der Vertriebler 100 Vertraege erreicht. Keine monatlichen Kosten, keine versteckten Gebuehren."
+      : "Der Plattformzugang ist kostenlos. Bei erfolgreicher Einstellung eines Kandidaten faellt eine Vermittlungsprovision von 750 Euro netto an, plus 750 Euro netto sobald der Vertriebler 100 Vertraege erreicht. Keine monatlichen Kosten, keine versteckten Gebuehren.",
   },
   {
     question: "Wie schnell bekomme ich Kandidaten?",
@@ -110,8 +112,9 @@ const FAQ_ITEMS = [
   },
   {
     question: "Gibt es eine Mindestlaufzeit?",
-    answer:
-      "Nein. Die Freischaltung ist eine einmalige Gebuehr — es gibt kein Abo, keine Bindung und keine versteckten Fristen. Danach zahlst du nur bei erfolgreicher Vermittlung.",
+    answer: FREISCHALTUNG_AKTIV
+      ? "Nein. Die Freischaltung ist eine einmalige Gebuehr — es gibt kein Abo, keine Bindung und keine versteckten Fristen. Danach zahlst du nur bei erfolgreicher Vermittlung."
+      : "Nein. Es gibt kein Abo, keine Bindung und keine versteckten Fristen. Du zahlst nur bei erfolgreicher Vermittlung.",
   },
   {
     question: "Was passiert nach der Einstellung?",
@@ -275,17 +278,29 @@ export default function PartnerWerdenPage() {
               <div className="relative p-8 sm:p-10">
                 <div className="text-center">
                   <p className="text-sm font-medium uppercase tracking-wider text-red-400">
-                    Plattform-Freischaltung
+                    {FREISCHALTUNG_AKTIV
+                      ? "Plattform-Freischaltung"
+                      : "Plattformzugang"}
                   </p>
-                  <div className="mt-4 flex items-baseline justify-center gap-1">
-                    <span className="text-5xl font-bold text-white">
-                      999
-                    </span>
-                    <span className="text-xl text-white/40">&euro;</span>
-                    <span className="ml-1 text-white/40">einmalig</span>
-                  </div>
+                  {FREISCHALTUNG_AKTIV ? (
+                    <div className="mt-4 flex items-baseline justify-center gap-1">
+                      <span className="text-5xl font-bold text-white">
+                        999
+                      </span>
+                      <span className="text-xl text-white/40">&euro;</span>
+                      <span className="ml-1 text-white/40">einmalig</span>
+                    </div>
+                  ) : (
+                    <div className="mt-4 flex items-baseline justify-center gap-1">
+                      <span className="text-5xl font-bold text-white">
+                        Kostenlos
+                      </span>
+                    </div>
+                  )}
                   <p className="mt-2 text-sm text-white/40">
-                    netto zzgl. MwSt. &middot; Keine monatlichen Kosten
+                    {FREISCHALTUNG_AKTIV
+                      ? "netto zzgl. MwSt. \u00B7 Keine monatlichen Kosten"
+                      : "Keine monatlichen Kosten \u00B7 Provision nur bei Erfolg"}
                   </p>
                 </div>
 
