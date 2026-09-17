@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendPartnerKandidatVergeben } from "@/lib/integrations/resend";
+import { sendPushToUser } from "@/lib/integrations/push";
 
 /**
  * R7 – Konkurrierende Anfragen schließen
@@ -15,7 +16,7 @@ export async function closeCompetingPlacements(
 ): Promise<number> {
   const { data: competing } = await supabase
     .from("placements")
-    .select("id, partner_id, partner:partners(email, ansprechpartner)")
+    .select("id, partner_id, partner:partners(email, ansprechpartner, user_id)")
     .eq("candidate_id", candidateId)
     .neq("id", winningPlacementId)
     .in("status", ["leadeingang", "vorstellungsgespraech", "probetag"]);
@@ -72,6 +73,11 @@ export async function closeCompetingPlacements(
     } catch (e) {
       console.error("sendPartnerKandidatVergeben fehlgeschlagen:", e);
     }
+    await sendPushToUser(partner.user_id, {
+      title: "Kandidat anderweitig vergeben",
+      body: `${anzeigeName} wurde anderweitig vermittelt.`,
+      url: "/partner/kandidaten",
+    });
   }
 
   return ids.length;

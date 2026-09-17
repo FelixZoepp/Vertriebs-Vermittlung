@@ -7,6 +7,7 @@ import {
 } from "@/lib/rules/stage-transition";
 import { createCandidateAccount } from "@/lib/rules/candidate-account";
 import { sendMasterclassFreischaltung } from "@/lib/integrations/resend";
+import { sendPushToUser } from "@/lib/integrations/push";
 import { STAGES, type Stage } from "@/lib/types";
 
 export async function PATCH(
@@ -155,6 +156,18 @@ export async function PATCH(
           loginUrl,
           temporaryPassword
         );
+
+        // Push an Kandidat (user_id frisch laden – Account wurde ggf. eben erst erstellt)
+        const { data: candidateWithUser } = await supabase
+          .from("candidates")
+          .select("user_id")
+          .eq("id", candidateId)
+          .single();
+        await sendPushToUser(candidateWithUser?.user_id, {
+          title: "Masterclass freigeschaltet",
+          body: `${vorname}, deine Masterclass ist jetzt freigeschaltet!`,
+          url: "/kandidat/masterclass",
+        });
       } catch (err) {
         console.error("Masterclass account/email failed:", err);
       }

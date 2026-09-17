@@ -11,6 +11,7 @@ import {
 import { closeCompetingPlacements } from "@/lib/rules/competing-placements";
 import { vermittleAnNaechstenPartner } from "@/lib/rules/exclusive-assignment";
 import { TRACKING_INTERVALS } from "@/lib/placement-stages";
+import { sendPushToUser } from "@/lib/integrations/push";
 
 export async function PATCH(
   request: NextRequest,
@@ -108,6 +109,29 @@ export async function PATCH(
     aktion: "status_changed",
     payload: { from: placement.status, to: newStatus, ...(abgelehnt_grund ? { abgelehnt_grund } : {}) },
   });
+
+  // Push an Kandidat: beim Partner vorgestellt (Vorstellungsgespräch)
+  if (newStatus === "vorstellungsgespraech") {
+    const { data: candidate } = await supabase
+      .from("candidates")
+      .select("user_id, vorname")
+      .eq("id", placement.candidate_id)
+      .single();
+    if (candidate?.user_id) {
+      const { data: partner } = await supabase
+        .from("partners")
+        .select("firmenname")
+        .eq("id", placement.partner_id)
+        .single();
+      await sendPushToUser(candidate.user_id, {
+        title: "Du wurdest vorgestellt",
+        body: partner?.firmenname
+          ? `${candidate.vorname}, du wurdest bei ${partner.firmenname} vorgestellt!`
+          : `${candidate.vorname}, du wurdest bei einem Partner vorgestellt!`,
+        url: "/kandidat",
+      });
+    }
+  }
 
   // R8: Bei Ablehnung automatisch an den nächstbesten Partner weitervermitteln
   if (newStatus === "abgelehnt") {

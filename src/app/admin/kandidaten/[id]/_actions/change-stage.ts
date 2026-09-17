@@ -15,6 +15,7 @@ import {
   sendVermittelbarBenachrichtigung,
   sendAdminNeuerVermittelbarer,
 } from "@/lib/integrations/resend";
+import { sendPushToUser } from "@/lib/integrations/push";
 
 export async function changeStageAction(
   candidateId: number,
@@ -77,7 +78,7 @@ export async function changeStageAction(
     // Fetch candidate data & generate magic link
     const { data: candidate } = await supabase
       .from("candidates")
-      .select("email, vorname")
+      .select("email, vorname, user_id")
       .eq("id", candidateId)
       .single();
 
@@ -105,6 +106,13 @@ export async function changeStageAction(
         loginUrl,
         temporaryPassword
       ).catch(() => {});
+
+      // Push an Kandidat (fire and forget)
+      sendPushToUser(candidate.user_id, {
+        title: "Masterclass freigeschaltet",
+        body: `${candidate.vorname}, deine Masterclass ist jetzt freigeschaltet!`,
+        url: "/kandidat/masterclass",
+      });
     }
   }
 

@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { isPartnerFreigeschaltet } from "@/lib/types";
 import { redirect } from "next/navigation";
 import { SidebarNav } from "@/components/sidebar-nav";
+import { PushOptIn } from "@/components/push/push-opt-in";
 
 export default async function PartnerLayout({
   children,
@@ -29,7 +30,10 @@ export default async function PartnerLayout({
     <div className="flex h-screen bg-background">
       <SidebarNav role={user.role} userName={user.name} email={user.email} />
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">{children}</div>
+        <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+          <PushOptIn />
+          {children}
+        </div>
       </main>
     </div>
   );

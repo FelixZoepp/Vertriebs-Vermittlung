@@ -15,6 +15,15 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Zoepp Media – Vertriebsvermittlung",
   description: "CRM-Plattform für D2D-Vertriebler-Vermittlung",
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Zoepp Media",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

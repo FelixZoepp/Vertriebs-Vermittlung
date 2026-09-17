@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { getCoordinatesForPLZ } from "@/lib/plz-data";
 import { sendBewerberEingang } from "@/lib/integrations/resend";
+import { sendPushToAdmins } from "@/lib/integrations/push";
 
 /**
  * POST /api/webhooks/leads
@@ -244,6 +245,13 @@ export async function POST(request: Request) {
 
   // Send confirmation email (fire and forget)
   sendBewerberEingang(email, vorname).catch(() => {});
+
+  // Push an Admins (fire and forget)
+  sendPushToAdmins({
+    title: "Neuer Bewerber",
+    body: `${vorname} hat sich beworben (Quelle: ${quelle}).`,
+    url: "/admin/kandidaten/board",
+  });
 
   // Log to activity_log
   await supabase.from("activity_log").insert({

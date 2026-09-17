@@ -2,6 +2,7 @@
 
 import { createServiceClient } from "@/lib/supabase/server";
 import { sendBewerberEingang } from "@/lib/integrations/resend";
+import { sendPushToAdmins } from "@/lib/integrations/push";
 import { getCoordinatesForPLZ } from "@/lib/plz-data";
 import { BRANCHEN, MAX_RADIUS_KM } from "@/lib/types";
 
@@ -128,6 +129,13 @@ export async function submitBewerbung(
 
   // Send confirmation email (fire and forget)
   sendBewerberEingang(email, vorname).catch(() => {});
+
+  // Push an Admins (fire and forget)
+  sendPushToAdmins({
+    title: "Neuer Bewerber",
+    body: `${vorname} ${nachname} hat sich beworben${ort ? ` (${ort})` : ""}.`,
+    url: "/admin/kandidaten/board",
+  });
 
   return { success: true };
 }

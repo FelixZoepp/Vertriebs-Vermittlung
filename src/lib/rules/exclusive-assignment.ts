@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { calculateMatchScore, rankMatches, type MatchResult } from "@/lib/rules/matching";
 import { isPartnerFreigeschaltet, type Candidate, type Partner } from "@/lib/types";
 import { sendPartnerNeuerKandidat } from "@/lib/integrations/resend";
+import { sendPushToUser } from "@/lib/integrations/push";
 
 /**
  * R8 – Exklusive Vermittlung
@@ -157,6 +158,11 @@ export async function vermittleAnNaechstenPartner(
     } catch (e) {
       console.error("sendPartnerNeuerKandidat fehlgeschlagen:", e);
     }
+    await sendPushToUser(partner.user_id, {
+      title: "Neuer Kandidat für dich",
+      body: `${anzeigeName} wurde dir vorgeschlagen (Match: ${best.score}%).`,
+      url: "/partner/kandidaten",
+    });
   }
 
   return placement.id;

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/auth";
+import { sendPushToUser } from "@/lib/integrations/push";
 
 export interface ProposeResult {
   success: boolean;
@@ -86,6 +87,30 @@ export async function proposeMatch(
 
   if (logError) {
     console.error("Activity log error:", logError.message);
+  }
+
+  // Push an Partner: neuer Kandidat vorgeschlagen (anonymisierter Name)
+  const [{ data: candidateData }, { data: partnerData }] = await Promise.all([
+    supabase
+      .from("candidates")
+      .select("vorname, nachname")
+      .eq("id", candidateId)
+      .single(),
+    supabase
+      .from("partners")
+      .select("user_id")
+      .eq("id", partnerId)
+      .single(),
+  ]);
+  if (partnerData?.user_id) {
+    const anzeigeName = candidateData
+      ? `${candidateData.vorname} ${candidateData.nachname.charAt(0)}.`
+      : "Ein Kandidat";
+    await sendPushToUser(partnerData.user_id, {
+      title: "Neuer Kandidat für dich",
+      body: `${anzeigeName} wurde dir vorgeschlagen (Match: ${matchScore}%).`,
+      url: "/partner/kandidaten",
+    });
   }
 
   revalidatePath("/admin/vermittlungen");

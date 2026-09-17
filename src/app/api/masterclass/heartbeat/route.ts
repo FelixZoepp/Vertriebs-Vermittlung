@@ -10,6 +10,7 @@ import {
   sendAdminNeuerVermittelbarer,
   sendPartnerNeuerKandidat,
 } from "@/lib/integrations/resend";
+import { sendPushToUser } from "@/lib/integrations/push";
 import type { Candidate, Partner } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
@@ -411,6 +412,11 @@ async function handleVermittelbarAutomation(
         kandidatName,
         bestMatch.score
       ).catch((err) => console.error("Partner notification failed:", err));
+      sendPushToUser(partner.user_id, {
+        title: "Neuer Kandidat für dich",
+        body: `${kandidatName} wurde dir vorgeschlagen (Match: ${bestMatch.score}%).`,
+        url: "/partner/kandidaten",
+      });
     }
 
     console.log(
