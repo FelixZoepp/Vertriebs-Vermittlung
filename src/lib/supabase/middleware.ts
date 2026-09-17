@@ -59,18 +59,39 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Role-based access — use service client to bypass RLS
-  const serviceClient = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-  const { data: profile } = await serviceClient
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  // Role-based access — Rolle aus Cookie lesen, sonst einmalig aus DB
+  const ROLE_COOKIE = "app-role";
+  const VALID_ROLES = ["admin", "partner", "candidate"];
+  let role: string | null = null;
 
-  const role = profile?.role || "candidate";
+  const roleCookie = request.cookies.get(ROLE_COOKIE)?.value;
+  if (roleCookie) {
+    const [cookieUserId, cookieRole] = roleCookie.split(":");
+    if (cookieUserId === user.id && VALID_ROLES.includes(cookieRole)) {
+      role = cookieRole;
+    }
+  }
+
+  if (!role) {
+    const serviceClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const { data: profile } = await serviceClient
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    role = profile?.role || "candidate";
+    supabaseResponse.cookies.set(ROLE_COOKIE, `${user.id}:${role}`, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24, // 24h, danach frische DB-Abfrage
+    });
+  }
 
   // Block partner from admin routes
   if (pathname.startsWith("/admin") && role !== "admin") {

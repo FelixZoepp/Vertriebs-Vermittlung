@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -10,7 +11,8 @@ export interface AuthUser {
   name: string | null;
 }
 
-export async function getAuthUser(): Promise<AuthUser> {
+// cache(): dedupliziert Aufrufe aus Layout + Page innerhalb eines Requests
+export const getAuthUser = cache(async (): Promise<AuthUser> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -32,4 +34,4 @@ export async function getAuthUser(): Promise<AuthUser> {
     role: (profile?.role as UserRole) || "candidate",
     name: profile?.name || null,
   };
-}
+});
